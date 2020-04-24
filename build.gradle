@@ -23,6 +23,15 @@ allprojects {
     }
 }
 
+subprojects {
+    afterEvaluate {
+            configure(android.lintOptions) {
+                abortOnError false
+            }
+    }
+}
+
+
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
