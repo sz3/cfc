@@ -10,9 +10,7 @@ using namespace cv;
 
 extern "C" {
 void JNICALL
-Java_com_example_nativeopencvandroidtemplate_MainActivity_adaptiveThresholdFromJNI(JNIEnv *env,
-                                                                                   jobject instance,
-                                                                                   jlong matAddr) {
+Java_com_example_camerafilecopy_MainActivity_adaptiveThresholdFromJNI(JNIEnv *env, jobject instance, jlong matAddr) {
 
     // get Mat from raw address
     Mat &mat = *(Mat *) matAddr;
