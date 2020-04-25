@@ -15,6 +15,7 @@ set (PROJECTS
 
 include_directories(
         ${OpenCV_DIR}/jni/include
+        lib/libcimbar/src/lib
 )
 
 foreach(proj ${PROJECTS})

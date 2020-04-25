@@ -4,6 +4,7 @@ add_library(native-lib
         SHARED
 
         native-lib.cpp
+        Processing.h
 )
 
 find_library(log-lib
@@ -12,6 +13,8 @@ find_library(log-lib
 )
 
 target_link_libraries(native-lib
+
+        extractor
 
         ${OPENCV_LIBS}
         ${log-lib}
