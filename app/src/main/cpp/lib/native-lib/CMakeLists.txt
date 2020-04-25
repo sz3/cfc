@@ -13,6 +13,6 @@ find_library(log-lib
 
 target_link_libraries(native-lib
 
-        lib_opencv
+        ${OPENCV_LIBS}
         ${log-lib}
 )
