@@ -21,7 +21,6 @@ set (PROJECTS
 )
 
 include_directories(
-	${OpenCV_DIR}/jni/include
 	${libcimbar_SOURCE_DIR}/src/lib
 	${libcimbar_SOURCE_DIR}/src/third_party_lib
 )
