@@ -55,6 +55,14 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
                 CAMERA_PERMISSION_REQUEST
         );
 
+        ActivityCompat.requestPermissions(
+                this,
+                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                2
+        );
+
+        String path = this.getFilesDir().getPath();
+
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_main);
 
