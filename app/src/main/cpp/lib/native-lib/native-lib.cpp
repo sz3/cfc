@@ -53,6 +53,9 @@ Java_com_example_camerafilecopy_MainActivity_adaptiveThresholdFromJNI(JNIEnv *en
 	cv::putText(mat, sstop.str(), cv::Point(5,50), FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 	cv::putText(mat, ssmid.str(), cv::Point(5,100), FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 
+	for (const Anchor& anchor : anchors)
+		cv::rectangle(mat, cv::Point(anchor.x(), anchor.y()), cv::Point(anchor.xmax(), anchor.ymax()), cv::Scalar(255,20,20));
+
 	// log computation time to Android Logcat
 	double totalTime = double(clock() - begin) / CLOCKS_PER_SEC;
 	__android_log_print(ANDROID_LOG_INFO, TAG, "adaptiveThreshold computation time = %f seconds\n",
