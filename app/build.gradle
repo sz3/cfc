@@ -21,6 +21,7 @@ android {
                 arguments "-DOpenCV_DIR=" + opencvsdk + "/sdk/native"
             }
         }
+        setProperty("archivesBaseName", "CameraFileCopy")
     }
     buildTypes {
         release {
