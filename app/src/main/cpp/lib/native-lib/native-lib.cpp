@@ -36,7 +36,7 @@ Java_com_example_camerafilecopy_MainActivity_adaptiveThresholdFromJNI(JNIEnv *en
 		_scanTicks += (clock() - begin);
 	}
 
-    if (_calls % 10 == 0)
+    if (_calls % 10 == 0 and anchors.size() > 0 and anchors.size() < 4)
     {
         std::stringstream fname;
         fname << "/data/user/0/com.example.camerafilecopy/files/myimage" << _calls << ".png";
