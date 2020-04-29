@@ -39,7 +39,7 @@ Java_com_example_camerafilecopy_MainActivity_adaptiveThresholdFromJNI(JNIEnv *en
     if (_calls % 10 == 0 and anchors.size() > 0 and anchors.size() < 4)
     {
         std::stringstream fname;
-        fname << "/data/user/0/com.example.camerafilecopy/files/myimage" << _calls << ".png";
+        fname << "/storage/emulated/0/Android/data/com.example.camerafilecopy/files/myimage" << _calls << ".png";
         cv::imwrite(fname.str(), mat);
     }
 

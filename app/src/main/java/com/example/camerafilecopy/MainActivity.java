@@ -61,7 +61,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
                 2
         );
 
-        String path = this.getFilesDir().getPath();
+        String path = this.getExternalFilesDir(null).getPath();
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_main);
