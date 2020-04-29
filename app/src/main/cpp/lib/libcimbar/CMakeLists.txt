@@ -7,7 +7,6 @@ if(NOT DEFINED OPENCV_LIBS)
 endif()
 
 set (PROJECTS
-   src/exe/cimbar_scan
    src/exe/build_image_assets
 
    src/lib/bit_file
