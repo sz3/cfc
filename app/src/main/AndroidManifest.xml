@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:tools="http://schemas.android.com/tools"
           package="com.example.camerafilecopy">
 
     <uses-permission android:name="android.permission.CAMERA"/>
@@ -10,13 +11,16 @@
     <uses-feature android:name="android.hardware.camera.front.autofocus"/>
 
     <application
+            tools:ignore="LockedOrientationActivity"
             android:allowBackup="true"
             android:icon="@mipmap/ic_launcher"
             android:label="@string/app_name"
             android:roundIcon="@mipmap/ic_launcher_round"
             android:supportsRtl="true"
             android:theme="@style/AppTheme">
-        <activity android:name=".MainActivity">
+        <activity android:name=".MainActivity"
+		  android:screenOrientation="landscape"
+		  android:theme="@android:style/Theme.NoTitleBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
