@@ -14,8 +14,13 @@ find_library(log-lib
 
 target_link_libraries(native-lib
 
-        extractor
+-Wl,--start-group
+        cimb_translator
+	encoder
+	extractor
+-Wl,--end-group
 
+        correct
         ${OPENCV_LIBS}
         ${log-lib}
 )
