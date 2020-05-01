@@ -1,4 +1,7 @@
 #include "Processing.h"
+#include "cimb_translator/CimbDecoder.h"
+#include "cimb_translator/CimbReader.h"
+#include "encoder/Decoder.h"
 
 #include <jni.h>
 #include <android/log.h>
@@ -44,6 +47,9 @@ Java_com_example_camerafilecopy_MainActivity_adaptiveThresholdFromJNI(JNIEnv *en
 		_decodeTicks += (clock() - begin);
 	}
 
+	for (const Anchor& anchor : anchors)
+		cv::rectangle(mat, cv::Point(anchor.x(), anchor.y()), cv::Point(anchor.xmax(), anchor.ymax()), cv::Scalar(255,20,20), 10);
+
 	if (_calls % 10 == 0 and anchors.size() > 0 and anchors.size() < 4)
 	{
 		std::stringstream fname;
@@ -52,16 +58,21 @@ Java_com_example_camerafilecopy_MainActivity_adaptiveThresholdFromJNI(JNIEnv *en
 	}
 
 	std::stringstream ssmid;
-	ssmid << "#: " << _successfulScans << " / " << _calls << ". scan: " << _scanTicks;
+	ssmid << "#: " << _successfulScans << " / " << _calls << ". scan: " << _scanTicks << ", extract: " << _extractTicks;
+	std::stringstream sslow;
+	sslow << "decode: " << _decodeTicks << ", idecode: " << Decoder::getTicks();
+	std::stringstream sreader;
+	sreader << "reader A: " << CimbReader::getTicksA() << ", B: " << CimbReader::getTicksB() << ", C: " << CimbReader::getTicksC();
+	std::stringstream sslower;
+	sslower << "bs: " << CimbDecoder::bestSymbolTicks() << ", bc: " << CimbDecoder::bestColorTicks() << ", dcolor: " << CimbDecoder::decodeColorTicks();
 	std::stringstream ssbot;
-	ssbot << "extract: " << _extractTicks << ", decode: " << _decodeTicks;
+	ssbot << "ahash: " << CimbDecoder::ahashTicks() << ", extract: " << CimbDecoder::extractAhashTicks();
 
-	//cv::adaptiveThreshold(mat, mat, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY_INV, 21, 5);
 	cv::putText(mat, ssmid.str(), cv::Point(5,200), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
-	cv::putText(mat, ssbot.str(), cv::Point(5,250), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
-
-	for (const Anchor& anchor : anchors)
-		cv::rectangle(mat, cv::Point(anchor.x(), anchor.y()), cv::Point(anchor.xmax(), anchor.ymax()), cv::Scalar(255,20,20), 10);
+	cv::putText(mat, sslow.str(), cv::Point(5,250), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
+	cv::putText(mat, sreader.str(), cv::Point(5,300), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
+	cv::putText(mat, sslower.str(), cv::Point(5,350), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
+	cv::putText(mat, ssbot.str(), cv::Point(5,400), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 
 	// log computation time to Android Logcat
 	double totalTime = double(clock() - begin) / CLOCKS_PER_SEC;

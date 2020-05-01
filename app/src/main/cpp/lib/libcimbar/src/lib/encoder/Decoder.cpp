@@ -9,6 +9,9 @@
 using std::string;
 
 
+static uint64_t _ticks = 0;
+
+
 namespace {
 	/* while bits == f.read_tile()
 	 *     decode(bits)
@@ -24,6 +27,7 @@ namespace {
 	 * */
 	unsigned do_decode(CimbReader& reader, unsigned ecc_bytes, string output, unsigned bits_per_op)
 	{
+		clock_t begin = clock();
 		bitwriter<> bw;
 		ReedSolomonFile f(output, ecc_bytes, true);
 
@@ -38,10 +42,15 @@ namespace {
 
 		// flush once more
 		bytesWritten += bw.flush(f);
+		_ticks += clock() - begin;
 		return bytesWritten;
 	}
 }
 
+uint64_t Decoder::getTicks()
+{
+	return _ticks;
+}
 
 Decoder::Decoder(unsigned ecc_bytes, unsigned bits_per_op)
     : _eccBytes(ecc_bytes)

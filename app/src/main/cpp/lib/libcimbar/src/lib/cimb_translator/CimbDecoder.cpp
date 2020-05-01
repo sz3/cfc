@@ -10,6 +10,39 @@
 #include <iostream>
 using std::string;
 
+
+static uint64_t _ahashTicks = 0;
+static uint64_t _extractAhashTicks = 0;
+static uint64_t _bestSymbolTicks = 0;
+static uint64_t _bestColorTicks = 0;
+static uint64_t _decodeColorTicks = 0;
+
+uint64_t CimbDecoder::ahashTicks()
+{
+	return _ahashTicks;
+}
+
+uint64_t CimbDecoder::extractAhashTicks()
+{
+	return _extractAhashTicks;
+}
+
+uint64_t CimbDecoder::bestSymbolTicks()
+{
+	return _bestSymbolTicks;
+}
+
+uint64_t CimbDecoder::bestColorTicks()
+{
+	return _bestColorTicks;
+}
+
+uint64_t CimbDecoder::decodeColorTicks()
+{
+	return _decodeColorTicks;
+}
+
+
 CimbDecoder::CimbDecoder(unsigned symbol_bits, unsigned color_bits)
     : _symbolBits(symbol_bits)
     , _numSymbols(1 << symbol_bits)
@@ -33,7 +66,7 @@ bool CimbDecoder::load_tiles()
 	return true;
 }
 
-unsigned CimbDecoder::get_best_symbol(const std::vector<uint64_t>& hashes, unsigned& drift_offset)
+unsigned CimbDecoder::get_best_symbol(const std::array<uint64_t, 9>& hashes, unsigned& drift_offset)
 {
 	drift_offset = 0;
 	unsigned best_fit = 0;
@@ -62,7 +95,12 @@ unsigned CimbDecoder::get_best_symbol(const std::vector<uint64_t>& hashes, unsig
 
 unsigned CimbDecoder::decode_symbol(const cv::Mat& cell, unsigned& drift_offset)
 {
-	std::vector<uint64_t> hashes = image_hash::fuzzy_ahash(cell);
+	clock_t begin = clock();
+	auto bits = image_hash::fuzzy_ahash(cell);
+	_ahashTicks += clock() - begin;
+
+	begin = clock();
+	std::array<uint64_t, 9> hashes = image_hash::extract_fuzzy_ahash(bits);
 	/*for (const std::pair<int, int>& drift : CellDrift::driftPairs)
 	{
 		cv::Rect crop(drift.first + 1, drift.second + 1, 8, 8);
@@ -70,7 +108,12 @@ unsigned CimbDecoder::decode_symbol(const cv::Mat& cell, unsigned& drift_offset)
 
 		hashes.push_back(image_hash::average_hash(img));
 	}*/
-	return get_best_symbol(hashes, drift_offset);
+	_extractAhashTicks += clock() - begin;
+
+	begin = clock();
+	unsigned res = get_best_symbol(hashes, drift_offset);
+	_bestSymbolTicks += clock() - begin;
+	return res;
 }
 
 unsigned char CimbDecoder::fix_color(unsigned char c, float adjust) const
@@ -85,6 +128,7 @@ unsigned CimbDecoder::check_color_distance(cv::Vec3b c, unsigned char r, unsigne
 
 unsigned CimbDecoder::get_best_color(unsigned char r, unsigned char g, unsigned char b) const
 {
+	clock_t begin = clock();
 	unsigned char max = std::max(r, g);
 	max = std::max(max, b);
 	max = std::max(max, uchar(1));
@@ -108,6 +152,7 @@ unsigned CimbDecoder::get_best_color(unsigned char r, unsigned char g, unsigned 
 				break;
 		}
 	}
+	_bestColorTicks += clock() - begin;
 	return best_fit;
 }
 
@@ -116,11 +161,13 @@ unsigned CimbDecoder::decode_color(const cv::Mat& color_cell, const std::pair<in
 	if (_numColors <= 1)
 		return 0;
 
+	clock_t begin = clock();
 	// limit dimensions to ignore outer row/col
 	// when we have the drift, that will factor into this calculation as well
 	cv::Rect crop(1 + drift.first, 1 + drift.second, color_cell.cols - 2, color_cell.rows - 2);
 	cv::Mat center = color_cell(crop);
 	cv::Scalar avgColor = cv::mean(center);
+	_decodeColorTicks += clock() - begin;
 	return get_best_color(avgColor[2], avgColor[1], avgColor[0]);
 }
 

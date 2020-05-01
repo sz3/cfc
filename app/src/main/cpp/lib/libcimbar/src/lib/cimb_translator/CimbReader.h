@@ -10,6 +10,10 @@
 class CimbReader
 {
 public:
+	static uint64_t getTicksA();
+	static uint64_t getTicksB();
+	static uint64_t getTicksC();
+
 	CimbReader(std::string filename);
 	CimbReader(const cv::Mat& img);
 
