@@ -16,7 +16,8 @@ android {
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
-                cppFlags "-frtti -fexceptions -std=c++17"
+                cFlags "-O3"
+                cppFlags "-O3 -frtti -fexceptions -std=c++17"
                 abiFilters 'x86', 'x86_64', 'armeabi-v7a', 'arm64-v8a'
                 arguments "-DOpenCV_DIR=" + opencvsdk + "/sdk/native"
             }
