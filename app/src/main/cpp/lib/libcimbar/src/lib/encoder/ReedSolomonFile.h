@@ -11,8 +11,8 @@ public:
 
 public:
 	ReedSolomonFile(std::string filename, unsigned ecc, bool write=false)
-		: File(filename, write)
-		, _rs(ecc)
+	    : File(filename, write)
+	    , _rs(ecc)
 	{
 		_buffer.resize(buffer_size, 0);
 	}
@@ -32,13 +32,13 @@ public:
 	unsigned write(const char* data, unsigned length)
 	{
 		if (!_rs.parity())
-			return File::write(data, length);
+			return length;
 
 		// else
 		ssize_t bytes = _rs.decode(data, length, _buffer.data());
 		if (bytes <= 0)
 			return 0;
-		return File::write(_buffer.data(), bytes);
+		return bytes;
 	}
 
 	const char* buffer() const

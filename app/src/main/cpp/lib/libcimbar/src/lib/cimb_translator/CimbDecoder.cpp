@@ -164,7 +164,7 @@ unsigned CimbDecoder::decode_color(const cv::Mat& color_cell, const std::pair<in
 	clock_t begin = clock();
 	// limit dimensions to ignore outer row/col
 	// when we have the drift, that will factor into this calculation as well
-	cv::Rect crop(1 + drift.first, 1 + drift.second, color_cell.cols - 2, color_cell.rows - 2);
+	cv::Rect crop(2 + drift.first, 2 + drift.second, color_cell.cols - 4, color_cell.rows - 4);
 	cv::Mat center = color_cell(crop);
 	cv::Scalar avgColor = cv::mean(center);
 	_decodeColorTicks += clock() - begin;

@@ -45,18 +45,18 @@ unsigned CimbReader::read()
 		return 0;
 
 	clock_t begin = clock();
-	CellPosition::coordinate xy = _position.next();
-	xy.first += _drift.x();
-	xy.second += _drift.y();
 	_ticksA += clock() - begin;
+	const CellPosition::coordinate& xy = _position.next();
+	int x = xy.first + _drift.x();
+	int y = xy.second + _drift.y();
 
-	int x = xy.first;
-	int y = xy.second;
+	begin = clock();
 	cv::Rect crop(x-1, y-1, _cellSize, _cellSize);
 	cv::Mat cell = _grayscale(crop);
 	cv::Mat color_cell = _image(crop);
 	_ticksB += clock() - begin;
 
+	begin = clock();
 	unsigned drift_offset = 0;
 	unsigned bits = _decoder.decode(cell, color_cell, drift_offset);
 
