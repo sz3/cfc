@@ -7,6 +7,8 @@
 class CimbDecoder
 {
 public:
+	static uint64_t decodeTicksA();
+	static uint64_t decodeTicksB();
 	static uint64_t ahashTicks();
 	static uint64_t extractAhashTicks();
 	static uint64_t bestSymbolTicks();

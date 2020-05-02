@@ -11,11 +11,23 @@
 using std::string;
 
 
+static uint64_t _decodeTicksA = 0;
+static uint64_t _decodeTicksB = 0;
 static uint64_t _ahashTicks = 0;
 static uint64_t _extractAhashTicks = 0;
 static uint64_t _bestSymbolTicks = 0;
 static uint64_t _bestColorTicks = 0;
 static uint64_t _decodeColorTicks = 0;
+
+uint64_t CimbDecoder::decodeTicksA()
+{
+	return _decodeTicksA;
+}
+
+uint64_t CimbDecoder::decodeTicksB()
+{
+	return _decodeTicksB;
+}
 
 uint64_t CimbDecoder::ahashTicks()
 {
@@ -40,6 +52,38 @@ uint64_t CimbDecoder::bestColorTicks()
 uint64_t CimbDecoder::decodeColorTicks()
 {
 	return _decodeColorTicks;
+}
+
+
+namespace {
+	cv::Vec3b mean_color(const cv::Mat& img, int xstart, int ystart, int cols, int rows)
+	{
+		cols = cols * img.channels();
+		ystart = ystart * img.channels();
+
+		unsigned blue = 0;
+		unsigned green = 0;
+		unsigned red = 0;
+		unsigned count = 0;
+
+		int i,j;
+		for( i = xstart; i < rows; ++i)
+		{
+			const uchar* p = img.ptr<uchar>(i);
+			for (j = ystart; j < cols; j+=3)
+			{
+				blue += p[j];
+				green += p[j+1];
+				red += p[j+2];
+				count += 1;
+			}
+		}
+
+		if (!count)
+			return cv::Vec3b(0, 0, 0);
+
+		return cv::Vec3b(blue/count, green/count, red/count);
+	}
 }
 
 
@@ -71,6 +115,7 @@ unsigned CimbDecoder::get_best_symbol(const std::array<uint64_t, 9>& hashes, uns
 	drift_offset = 0;
 	unsigned best_fit = 0;
 	unsigned best_distance = 1000;
+
 	// there are 9 candidate hashes. Because we're greedy (see the `return`), we should iterate out from the center
 	// 4 == center.
 	// 5, 7, 3, 1 == sides.
@@ -138,7 +183,7 @@ unsigned CimbDecoder::get_best_color(unsigned char r, unsigned char g, unsigned 
 	g = fix_color(g, adjust);
 	b = fix_color(b, adjust);
 
-	int best_fit = 0;
+	unsigned best_fit = 0;
 	unsigned best_distance = 1000000;
 	for (int i = 0; i < _numColors; ++i)
 	{
@@ -161,20 +206,26 @@ unsigned CimbDecoder::decode_color(const cv::Mat& color_cell, const std::pair<in
 	if (_numColors <= 1)
 		return 0;
 
+	unsigned best;
 	clock_t begin = clock();
-	// limit dimensions to ignore outer row/col
-	// when we have the drift, that will factor into this calculation as well
-	cv::Rect crop(2 + drift.first, 2 + drift.second, color_cell.cols - 4, color_cell.rows - 4);
-	cv::Mat center = color_cell(crop);
-	cv::Scalar avgColor = cv::mean(center);
-	_decodeColorTicks += clock() - begin;
-	return get_best_color(avgColor[2], avgColor[1], avgColor[0]);
+	{
+		// limit dimensions to ignore outer row/col. We want a 6x6
+		cv::Vec3b avgColor = mean_color(color_cell, 2+drift.first, 2+drift.second, color_cell.cols-4, color_cell.rows-4);
+		_decodeColorTicks += clock() - begin;
+
+		begin = clock();
+		best = get_best_color(avgColor[2], avgColor[1], avgColor[0]);
+	}
+	_decodeTicksB += clock() - begin;
+	return best;
 }
 
 unsigned CimbDecoder::decode(const cv::Mat& cell, const cv::Mat& color_cell, unsigned& drift_offset)
 {
+	clock_t begin = clock();
 	unsigned bits = decode_symbol(cell, drift_offset);
 	bits |= decode_color(color_cell, CellDrift::driftPairs[drift_offset]) << _symbolBits;
+	_decodeTicksA += clock() - begin;
 	return bits;
 }
 

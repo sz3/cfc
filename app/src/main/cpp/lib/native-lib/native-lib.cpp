@@ -40,9 +40,11 @@ Java_com_example_camerafilecopy_MainActivity_adaptiveThresholdFromJNI(JNIEnv *en
 		++_successfulScans;
 		_scanTicks += (clock() - begin);
 
+		begin = clock();
 		cv::Mat img = p.extract(mat, anchors);
 		_extractTicks += (clock() - begin);
 
+		begin = clock();
 		p.decode(mat, img);
 		_decodeTicks += (clock() - begin);
 	}
@@ -62,11 +64,11 @@ Java_com_example_camerafilecopy_MainActivity_adaptiveThresholdFromJNI(JNIEnv *en
 	std::stringstream sslow;
 	sslow << "decode: " << _decodeTicks << ", idecode: " << Decoder::getTicks();
 	std::stringstream sreader;
-	sreader << "reader A: " << CimbReader::getTicksA() << ", B: " << CimbReader::getTicksB() << ", C: " << CimbReader::getTicksC();
+	sreader << "reader A: " << CimbReader::getTicksA() << ", B: " << CimbReader::getTicksB() << ", C: " << CimbReader::getTicksC() << ", decA: " << CimbDecoder::decodeTicksA();
 	std::stringstream sslower;
 	sslower << "bs: " << CimbDecoder::bestSymbolTicks() << ", bc: " << CimbDecoder::bestColorTicks() << ", dcolor: " << CimbDecoder::decodeColorTicks();
 	std::stringstream ssbot;
-	ssbot << "ahash: " << CimbDecoder::ahashTicks() << ", extract: " << CimbDecoder::extractAhashTicks();
+	ssbot << "ahash: " << CimbDecoder::ahashTicks() << ", extract: " << CimbDecoder::extractAhashTicks() << ", decB: " << CimbDecoder::decodeTicksB();
 
 	cv::putText(mat, ssmid.str(), cv::Point(5,200), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 	cv::putText(mat, sslow.str(), cv::Point(5,250), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
