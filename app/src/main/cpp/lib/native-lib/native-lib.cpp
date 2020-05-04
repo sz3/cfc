@@ -66,9 +66,9 @@ Java_com_example_camerafilecopy_MainActivity_adaptiveThresholdFromJNI(JNIEnv *en
 	std::stringstream sreader;
 	sreader << "reader A: " << CimbReader::getTicksA() << ", B: " << CimbReader::getTicksB() << ", C: " << CimbReader::getTicksC() << ", decA: " << CimbDecoder::decodeTicksA();
 	std::stringstream sslower;
-	sslower << "bs: " << CimbDecoder::bestSymbolTicks() << ", bc: " << CimbDecoder::bestColorTicks() << ", dcolor: " << CimbDecoder::decodeColorTicks();
+	sslower << "dsym: " << CimbDecoder::decodeSymbolTicks() << ", bs: " << CimbDecoder::bestSymbolTicks() << ", ahash: " << CimbDecoder::ahashTicks() << ", hashe: " << CimbDecoder::extractAhashTicks();
 	std::stringstream ssbot;
-	ssbot << "ahash: " << CimbDecoder::ahashTicks() << ", extract: " << CimbDecoder::extractAhashTicks() << ", decB: " << CimbDecoder::decodeTicksB();
+	ssbot << "dcolor: " << CimbDecoder::decodeColorTicks() << ", bc: " << CimbDecoder::bestColorTicks() << ", avgcolor: " << CimbDecoder::avgColorTicks();
 
 	cv::putText(mat, ssmid.str(), cv::Point(5,200), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 	cv::putText(mat, sslow.str(), cv::Point(5,250), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);

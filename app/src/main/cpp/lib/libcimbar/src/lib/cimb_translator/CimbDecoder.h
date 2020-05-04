@@ -7,13 +7,14 @@
 class CimbDecoder
 {
 public:
-	static uint64_t decodeTicksA();
-	static uint64_t decodeTicksB();
-	static uint64_t ahashTicks();
-	static uint64_t extractAhashTicks();
-	static uint64_t bestSymbolTicks();
-	static uint64_t bestColorTicks();
-	static uint64_t decodeColorTicks();
+	static clock_t decodeTicksA();
+	static clock_t decodeSymbolTicks();
+	static clock_t decodeColorTicks();
+	static clock_t ahashTicks();
+	static clock_t extractAhashTicks();
+	static clock_t bestSymbolTicks();
+	static clock_t avgColorTicks();
+	static clock_t bestColorTicks();
 
 	CimbDecoder(unsigned symbol_bits, unsigned color_bits);
 
@@ -23,15 +24,15 @@ public:
 	unsigned get_best_symbol(const std::array<uint64_t, 9>& hashes, unsigned& best_distance);
 	unsigned decode_symbol(const cv::Mat& cell, unsigned& drift_offset);
 
-	unsigned get_best_color(unsigned char r, unsigned char g, unsigned char b) const;
+	inline unsigned get_best_color(unsigned char r, unsigned char g, unsigned char b) const;
 	unsigned decode_color(const cv::Mat& cell, const std::pair<int, int>& drift);
 
 protected:
 	uint64_t get_tile_hash(unsigned symbol);
 	bool load_tiles();
 
-	unsigned check_color_distance(cv::Vec3b c, unsigned char r, unsigned char g, unsigned char b) const;
-	unsigned char fix_color(unsigned char c, float adjust) const;
+	inline unsigned check_color_distance(std::tuple<uchar,uchar,uchar> c, unsigned char r, unsigned char g, unsigned char b) const;
+	inline unsigned char fix_color(unsigned char c, float adjust) const;
 
 protected:
 	std::vector<uint64_t> _tileHashes;
