@@ -1,5 +1,7 @@
 #pragma once
 
+#include "CellDrift.h"
+#include "util/Timer.h"
 #include <opencv2/opencv.hpp>
 #include <cstdint>
 #include <string>
@@ -7,7 +9,7 @@
 class CimbDecoder
 {
 public:
-	static clock_t decodeTicksA();
+	inline static clock_t decodeTicksA = 0;
 	static clock_t decodeSymbolTicks();
 	static clock_t decodeColorTicks();
 	static clock_t ahashTicks();
@@ -41,3 +43,4 @@ protected:
 	unsigned _numColors;
 	bool _dark;
 };
+

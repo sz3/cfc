@@ -15,6 +15,8 @@ using namespace std;
 using namespace cv;
 
 namespace {
+	// Decoder _decoder; ?
+
 	unsigned _calls = 0;
 	unsigned _successfulScans = 0;
 	unsigned long long _scanTicks = 0;
@@ -64,7 +66,7 @@ Java_com_example_camerafilecopy_MainActivity_adaptiveThresholdFromJNI(JNIEnv *en
 	std::stringstream sslow;
 	sslow << "decode: " << _decodeTicks << ", idecode: " << Decoder::getTicks();
 	std::stringstream sreader;
-	sreader << "reader A: " << CimbReader::getTicksA() << ", B: " << CimbReader::getTicksB() << ", C: " << CimbReader::getTicksC() << ", decA: " << CimbDecoder::decodeTicksA();
+	sreader << "reader A: " << CimbReader::getTicksA() << ", B: " << CimbReader::getTicksB() << ", C: " << CimbReader::getTicksC() << ", decA: " << CimbDecoder::decodeTicksA;
 	std::stringstream sslower;
 	sslower << "dsym: " << CimbDecoder::decodeSymbolTicks() << ", bs: " << CimbDecoder::bestSymbolTicks() << ", ahash: " << CimbDecoder::ahashTicks() << ", hashe: " << CimbDecoder::extractAhashTicks();
 	std::stringstream ssbot;

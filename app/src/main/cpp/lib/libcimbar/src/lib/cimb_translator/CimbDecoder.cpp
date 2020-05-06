@@ -14,7 +14,6 @@ using std::get;
 using std::string;
 
 
-static clock_t _decodeTicksA = 0;
 static clock_t _decodeSymbolTicks = 0;
 static clock_t _decodeColorTicks = 0;
 static clock_t _ahashTicks = 0;
@@ -22,11 +21,6 @@ static clock_t _extractAhashTicks = 0;
 static clock_t _bestSymbolTicks = 0;
 static clock_t _avgColorTicks = 0;
 static clock_t _bestColorTicks = 0;
-
-clock_t CimbDecoder::decodeTicksA()
-{
-	return _decodeTicksA;
-}
 
 clock_t CimbDecoder::decodeSymbolTicks()
 {
@@ -230,7 +224,7 @@ unsigned CimbDecoder::decode_color(const cv::Mat& color_cell, const std::pair<in
 
 unsigned CimbDecoder::decode(const cv::Mat& cell, const cv::Mat& color_cell, unsigned& drift_offset)
 {
-	Timer t(_decodeTicksA);
+	Timer t(decodeTicksA);
 	unsigned bits = decode_symbol(cell, drift_offset);
 	bits |= decode_color(color_cell, CellDrift::driftPairs[drift_offset]) << _symbolBits;
 	return bits;

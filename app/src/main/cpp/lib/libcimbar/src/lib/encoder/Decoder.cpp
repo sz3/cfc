@@ -4,12 +4,13 @@
 #include "bit_file/bitwriter.h"
 #include "cimb_translator/CimbReader.h"
 #include "cimb_translator/Config.h"
+#include "util/Timer.h"
 
 #include <string>
 using std::string;
 
 
-static uint64_t _ticks = 0;
+static clock_t _ticks = 0;
 
 
 namespace {
@@ -27,7 +28,8 @@ namespace {
 	 * */
 	unsigned do_decode(CimbReader& reader, unsigned ecc_bytes, string output, unsigned bits_per_op)
 	{
-		clock_t begin = clock();
+		Timer t(_ticks);
+
 		bitwriter<> bw;
 		ReedSolomonFile f(output, ecc_bytes, true);
 
@@ -36,18 +38,17 @@ namespace {
 		{
 			unsigned bits = reader.read();
 			bw.write(bits, bits_per_op);
-			if (bw.shouldFlush())
-				bytesWritten += bw.flush(f);
+			//if (bw.shouldFlush())
+			//	bytesWritten += bw.flush(f);
 		}
 
 		// flush once more
-		bytesWritten += bw.flush(f);
-		_ticks += clock() - begin;
+		//bytesWritten += bw.flush(f);
 		return bytesWritten;
 	}
 }
 
-uint64_t Decoder::getTicks()
+clock_t Decoder::getTicks()
 {
 	return _ticks;
 }
