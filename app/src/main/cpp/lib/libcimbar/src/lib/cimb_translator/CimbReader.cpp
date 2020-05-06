@@ -10,16 +10,16 @@ static uint64_t _ticksA = 0;
 static uint64_t _ticksB = 0;
 static uint64_t _ticksC = 0;
 
-CimbReader::CimbReader(std::string filename)
-    : CimbReader(cv::imread(filename))
+CimbReader::CimbReader(std::string filename, const CimbDecoder& decoder)
+    : CimbReader(cv::imread(filename), decoder)
 {}
 
-CimbReader::CimbReader(const cv::Mat& img)
+CimbReader::CimbReader(const cv::Mat& img, const CimbDecoder& decoder)
     : _image(img)
     , _cellSize(Config::cell_size() + 2)
     , _position(Config::cell_spacing(), Config::num_cells(), Config::cell_size(), Config::corner_padding())
     , _drift()
-    , _decoder(Config::symbol_bits(), Config::color_bits())
+    , _decoder(decoder)
 {
 	cv::cvtColor(_image, _grayscale, cv::COLOR_BGR2GRAY);
 }

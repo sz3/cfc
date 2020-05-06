@@ -14,8 +14,8 @@ public:
 	static uint64_t getTicksB();
 	static uint64_t getTicksC();
 
-	CimbReader(std::string filename);
-	CimbReader(const cv::Mat& img);
+	CimbReader(std::string filename, const CimbDecoder& decoder);
+	CimbReader(const cv::Mat& img, const CimbDecoder& decoder);
 
 	unsigned read();
 	bool done() const;
@@ -26,5 +26,5 @@ protected:
 	unsigned _cellSize;
 	CellPosition _position;
 	CellDrift _drift;
-	CimbDecoder _decoder;
+	const CimbDecoder& _decoder;
 };
