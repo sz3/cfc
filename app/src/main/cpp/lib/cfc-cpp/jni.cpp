@@ -7,6 +7,7 @@
 #include <android/log.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <memory>
 #include <sstream>
 
 #define TAG "CameraFileCopyCPP"
@@ -15,7 +16,7 @@ using namespace std;
 using namespace cv;
 
 namespace {
-	// Decoder _decoder; ?
+	std::shared_ptr<Processing> _proc;
 
 	unsigned _calls = 0;
 	unsigned _successfulScans = 0;
@@ -35,19 +36,21 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 
 	clock_t begin = clock();
 
-	Processing p;
-	std::vector<Anchor> anchors = p.scan(mat);
+	if (!_proc)
+		_proc = std::make_shared<Processing>();
+
+	std::vector<Anchor> anchors = _proc->scan(mat);
 	if (anchors.size() > 3)
 	{
 		++_successfulScans;
 		_scanTicks += (clock() - begin);
 
 		begin = clock();
-		cv::Mat img = p.extract(mat, anchors);
+		cv::Mat img = _proc->extract(mat, anchors);
 		_extractTicks += (clock() - begin);
 
 		begin = clock();
-		p.decode(mat, img);
+		_proc->decode(mat, img);
 		_decodeTicks += (clock() - begin);
 	}
 
@@ -86,18 +89,19 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 
 void JNICALL
 Java_com_galacticicecube_camerafilecopy_MainActivity_pauseJNI(JNIEnv *env, jobject instance) {
-    __android_log_print(ANDROID_LOG_INFO, TAG, "Pause cfc-cpp\n");
+	__android_log_print(ANDROID_LOG_INFO, TAG, "Pause cfc-cpp\n");
 }
 
 void JNICALL
 Java_com_galacticicecube_camerafilecopy_MainActivity_resumeJNI(JNIEnv *env, jobject instance) {
-    __android_log_print(ANDROID_LOG_INFO, TAG, "Resume cfc-cpp\n");
+	__android_log_print(ANDROID_LOG_INFO, TAG, "Resume cfc-cpp\n");
 }
 
 
 void JNICALL
 Java_com_galacticicecube_camerafilecopy_MainActivity_shutdownJNI(JNIEnv *env, jobject instance) {
-    __android_log_print(ANDROID_LOG_INFO, TAG, "Shutdown cfc-cpp\n");
+	__android_log_print(ANDROID_LOG_INFO, TAG, "Shutdown cfc-cpp\n");
+	_proc = nullptr;
 }
 
 }
