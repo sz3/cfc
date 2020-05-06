@@ -64,7 +64,7 @@ Java_com_example_camerafilecopy_MainActivity_adaptiveThresholdFromJNI(JNIEnv *en
 	std::stringstream ssmid;
 	ssmid << "#: " << _successfulScans << " / " << _calls << ". scan: " << _scanTicks << ", extract: " << _extractTicks;
 	std::stringstream sslow;
-	sslow << "decode: " << _decodeTicks << ", idecode: " << Decoder::getTicks();
+	sslow << "decode: " << _decodeTicks << ", idecode: " << Decoder::getTicks() << ", bytes: " << Decoder::getBytesWritten();
 	std::stringstream sreader;
 	sreader << "reader A: " << CimbReader::getTicksA() << ", B: " << CimbReader::getTicksB() << ", C: " << CimbReader::getTicksC() << ", decA: " << CimbDecoder::decodeTicksA;
 	std::stringstream sslower;

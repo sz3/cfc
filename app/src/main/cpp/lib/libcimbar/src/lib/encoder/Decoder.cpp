@@ -12,6 +12,7 @@ using namespace cimbar;
 
 
 static clock_t _ticks = 0;
+static clock_t _bytesWritten = 0;
 
 
 namespace {
@@ -39,12 +40,14 @@ namespace {
 		{
 			unsigned bits = reader.read();
 			bw.write(bits, bits_per_op);
-			//if (bw.shouldFlush())
-			//	bytesWritten += bw.flush(f);
+			if (bw.shouldFlush())
+				bytesWritten += bw.flush(f);
 		}
 
 		// flush once more
-		//bytesWritten += bw.flush(f);
+		bytesWritten += bw.flush(f);
+
+		_bytesWritten += bytesWritten;
 		return bytesWritten;
 	}
 }
@@ -52,6 +55,11 @@ namespace {
 clock_t Decoder::getTicks()
 {
 	return _ticks;
+}
+
+clock_t Decoder::getBytesWritten()
+{
+	return _bytesWritten;
 }
 
 Decoder::Decoder(unsigned ecc_bytes, unsigned bits_per_op)

@@ -46,7 +46,7 @@ unsigned CimbReader::read()
 
 	clock_t begin = clock();
 	_ticksA += clock() - begin;
-	const CellPosition::coordinate& xy = _position.next();
+	CellPosition::coordinate xy = _position.next();
 	int x = xy.first + _drift.x();
 	int y = xy.second + _drift.y();
 	begin = clock();
