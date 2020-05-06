@@ -1,4 +1,4 @@
-package com.example.camerafilecopy;
+package com.galacticicecube.camerafilecopy;
 
 import android.content.Context;
 
@@ -22,6 +22,6 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
 
-        assertEquals("com.example.camerafilecopy", appContext.getPackageName());
+        assertEquals("com.galacticicecube.camerafilecopy", appContext.getPackageName());
     }
 }

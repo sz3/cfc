@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.4.1)
 
-add_library(native-lib
+add_library(cfc-cpp
         SHARED
 
-        native-lib.cpp
+        jni.cpp
         Processing.h
 )
 
@@ -12,7 +12,7 @@ find_library(log-lib
         log
 )
 
-target_link_libraries(native-lib
+target_link_libraries(cfc-cpp
 
 -Wl,--start-group
         cimb_translator

@@ -1,4 +1,4 @@
-package com.example.camerafilecopy;
+package com.galacticicecube.camerafilecopy;
 
 import android.Manifest;
 import android.app.Activity;
@@ -32,7 +32,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
                 Log.i(TAG, "OpenCV loaded successfully");
 
                 // Load native library after(!) OpenCV initialization
-                System.loadLibrary("native-lib");
+                System.loadLibrary("cfc-cpp");
 
                 mOpenCvCameraView.enableView();
             } else {
@@ -89,6 +89,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 
     @Override
     public void onPause() {
+        pauseJNI();
         super.onPause();
         if (mOpenCvCameraView != null)
             mOpenCvCameraView.disableView();
@@ -104,10 +105,12 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
             Log.d(TAG, "OpenCV library found inside package. Using it!");
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
+        resumeJNI();
     }
 
     @Override
     public void onDestroy() {
+        shutdownJNI();
         super.onDestroy();
         if (mOpenCvCameraView != null)
             mOpenCvCameraView.disableView();
@@ -127,11 +130,14 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         Mat mat = frame.rgba();
 
         // native call to process current camera frame
-        adaptiveThresholdFromJNI(mat.getNativeObjAddr());
+        processImageJNI(mat.getNativeObjAddr());
 
         // return processed frame for live preview
         return mat;
     }
 
-    private native void adaptiveThresholdFromJNI(long mat);
+    private native void processImageJNI(long mat);
+    private native void pauseJNI();
+    private native void resumeJNI();
+    private native void shutdownJNI();
 }

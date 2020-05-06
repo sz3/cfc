@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.4.1)
 
-project ( cfc_cpp )
+project ( cfc )
 
 # opencv stuff
 add_library( lib_opencv SHARED IMPORTED )
@@ -11,7 +11,7 @@ set( OPENCV_LIBS "lib_opencv" )
 
 # our stuff
 set (PROJECTS
-   lib/native-lib
+   lib/cfc-cpp
    lib/libcimbar
 )
 

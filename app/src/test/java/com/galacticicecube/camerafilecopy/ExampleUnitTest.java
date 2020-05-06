@@ -1,4 +1,4 @@
-package com.example.camerafilecopy;
+package com.galacticicecube.camerafilecopy;
 
 import org.junit.Test;
 
