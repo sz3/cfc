@@ -1,6 +1,7 @@
 #include "CimbDecoder.h"
 
 #include "Common.h"
+#include "Cell.h"
 #include "CellDrift.h"
 #include "image_hash/average_hash.h"
 #include "image_hash/hamming_distance.h"

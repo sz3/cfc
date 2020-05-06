@@ -49,7 +49,6 @@ unsigned CimbReader::read()
 	const CellPosition::coordinate& xy = _position.next();
 	int x = xy.first + _drift.x();
 	int y = xy.second + _drift.y();
-
 	begin = clock();
 	cv::Rect crop(x-1, y-1, _cellSize, _cellSize);
 	cv::Mat cell = _grayscale(crop);
