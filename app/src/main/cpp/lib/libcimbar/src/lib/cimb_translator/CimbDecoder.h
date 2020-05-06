@@ -33,7 +33,7 @@ protected:
 	uint64_t get_tile_hash(unsigned symbol) const;
 	bool load_tiles();
 
-	inline unsigned check_color_distance(std::tuple<uchar,uchar,uchar> c, unsigned char r, unsigned char g, unsigned char b) const;
+	unsigned check_color_distance(std::tuple<uchar,uchar,uchar> c, unsigned char r, unsigned char g, unsigned char b) const;
 	inline unsigned char fix_color(unsigned char c, float adjust) const;
 
 protected:

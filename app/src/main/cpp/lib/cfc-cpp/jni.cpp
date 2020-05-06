@@ -9,7 +9,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <sstream>
 
-#define TAG "NativeLib"
+#define TAG "CameraFileCopyCPP"
 
 using namespace std;
 using namespace cv;
@@ -26,7 +26,7 @@ namespace {
 
 extern "C" {
 void JNICALL
-Java_com_example_camerafilecopy_MainActivity_adaptiveThresholdFromJNI(JNIEnv *env, jobject instance, jlong matAddr) {
+Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env, jobject instance, jlong matAddr) {
 
 	++_calls;
 
@@ -57,7 +57,7 @@ Java_com_example_camerafilecopy_MainActivity_adaptiveThresholdFromJNI(JNIEnv *en
 	if (_calls % 10 == 0 and anchors.size() > 0 and anchors.size() < 4)
 	{
 		std::stringstream fname;
-		fname << "/storage/emulated/0/Android/data/com.example.camerafilecopy/files/myimage" << _calls << ".png";
+		fname << "/storage/emulated/0/Android/data/com.galacticicecube.camerafilecopy/files/myimage" << _calls << ".png";
 		//cv::imwrite(fname.str(), mat);
 	}
 
@@ -83,4 +83,21 @@ Java_com_example_camerafilecopy_MainActivity_adaptiveThresholdFromJNI(JNIEnv *en
 	__android_log_print(ANDROID_LOG_INFO, TAG, "adaptiveThreshold computation time = %f seconds\n",
 						totalTime);
 }
+
+void JNICALL
+Java_com_galacticicecube_camerafilecopy_MainActivity_pauseJNI(JNIEnv *env, jobject instance) {
+    __android_log_print(ANDROID_LOG_INFO, TAG, "Pause cfc-cpp\n");
+}
+
+void JNICALL
+Java_com_galacticicecube_camerafilecopy_MainActivity_resumeJNI(JNIEnv *env, jobject instance) {
+    __android_log_print(ANDROID_LOG_INFO, TAG, "Resume cfc-cpp\n");
+}
+
+
+void JNICALL
+Java_com_galacticicecube_camerafilecopy_MainActivity_shutdownJNI(JNIEnv *env, jobject instance) {
+    __android_log_print(ANDROID_LOG_INFO, TAG, "Shutdown cfc-cpp\n");
+}
+
 }

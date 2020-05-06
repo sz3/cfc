@@ -8,7 +8,7 @@ android {
     compileSdkVersion 29
     buildToolsVersion "29.0.3"
     defaultConfig {
-        applicationId "com.example.camerafilecopy"
+        applicationId "com.galacticicecube.camerafilecopy"
         minSdkVersion 21
         targetSdkVersion 29
         versionCode 1

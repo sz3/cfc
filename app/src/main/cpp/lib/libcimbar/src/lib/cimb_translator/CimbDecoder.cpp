@@ -142,7 +142,7 @@ inline unsigned char CimbDecoder::fix_color(unsigned char c, float adjust) const
 	return (uchar)(c * adjust);
 }
 
-inline unsigned CimbDecoder::check_color_distance(std::tuple<uchar,uchar,uchar> c, unsigned char r, unsigned char g, unsigned char b) const
+unsigned CimbDecoder::check_color_distance(std::tuple<uchar,uchar,uchar> c, unsigned char r, unsigned char g, unsigned char b) const
 {
 	return std::pow(get<0>(c) - r, 2) + std::pow(get<1>(c) - g, 2) + std::pow(get<2>(c) - b, 2);
 }
