@@ -42,8 +42,12 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 
 	Scanner scanner(mat);
 	std::vector<Anchor> anchors = scanner.scan();
-	for (const Anchor& anchor : anchors)
+	if (anchors.size())
+		_proc->add(mat);
+
+	for (const Anchor& anchor : anchors) {
 		cv::rectangle(mat, cv::Point(anchor.x(), anchor.y()), cv::Point(anchor.xmax(), anchor.ymax()), cv::Scalar(255,20,20), 10);
+	}
 
 	if (_calls % 10 == 0 and anchors.size() > 0 and anchors.size() < 4)
 	{
