@@ -1,7 +1,8 @@
-#include "Processing.h"
+#include "MultiThreadedDecoder.h"
 #include "cimb_translator/CimbDecoder.h"
 #include "cimb_translator/CimbReader.h"
 #include "encoder/Decoder.h"
+#include "extractor/Scanner.h"
 
 #include <jni.h>
 #include <android/log.h>
@@ -16,7 +17,7 @@ using namespace std;
 using namespace cv;
 
 namespace {
-	std::shared_ptr<Processing> _proc;
+	std::shared_ptr<MultiThreadedDecoder> _proc;
 
 	unsigned _calls = 0;
 	unsigned _successfulScans = 0;
@@ -37,23 +38,10 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 	clock_t begin = clock();
 
 	if (!_proc)
-		_proc = std::make_shared<Processing>();
+		_proc = std::make_shared<MultiThreadedDecoder>();
 
-	std::vector<Anchor> anchors = _proc->scan(mat);
-	if (anchors.size() > 3)
-	{
-		++_successfulScans;
-		_scanTicks += (clock() - begin);
-
-		begin = clock();
-		cv::Mat img = _proc->extract(mat, anchors);
-		_extractTicks += (clock() - begin);
-
-		begin = clock();
-		_proc->decode(mat, img);
-		_decodeTicks += (clock() - begin);
-	}
-
+	Scanner scanner(mat);
+	std::vector<Anchor> anchors = scanner.scan();
 	for (const Anchor& anchor : anchors)
 		cv::rectangle(mat, cv::Point(anchor.x(), anchor.y()), cv::Point(anchor.xmax(), anchor.ymax()), cv::Scalar(255,20,20), 10);
 
@@ -101,6 +89,8 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_resumeJNI(JNIEnv *env, jobj
 void JNICALL
 Java_com_galacticicecube_camerafilecopy_MainActivity_shutdownJNI(JNIEnv *env, jobject instance) {
 	__android_log_print(ANDROID_LOG_INFO, TAG, "Shutdown cfc-cpp\n");
+	if (_proc)
+		_proc->stop();
 	_proc = nullptr;
 }
 
