@@ -1,8 +1,8 @@
 #include "MultiThreadedDecoder.h"
+#include "Processing.h"
 #include "cimb_translator/CimbDecoder.h"
 #include "cimb_translator/CimbReader.h"
 #include "encoder/Decoder.h"
-#include "extractor/Scanner.h"
 
 #include <jni.h>
 #include <android/log.h>
@@ -42,8 +42,13 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 
 	Scanner scanner(mat);
 	std::vector<Anchor> anchors = scanner.scan();
-	if (anchors.size())
-		_proc->add(mat);
+	if (anchors.size() >= 4)
+	{
+		Corners corners(anchors[0].center(), anchors[1].center(), anchors[2].center(), anchors[3].center());
+		Deskewer de;
+		cv::Mat img = de.deskew(mat, corners);
+		_proc->add(img);
+	}
 
 	for (const Anchor& anchor : anchors) {
 		cv::rectangle(mat, cv::Point(anchor.x(), anchor.y()), cv::Point(anchor.xmax(), anchor.ymax()), cv::Scalar(255,20,20), 10);
@@ -56,8 +61,10 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 		//cv::imwrite(fname.str(), mat);
 	}
 
+	std::stringstream sstop;
+	sstop << "MTD says: " << std::thread::hardware_concurrency() << " thread(s), " << MultiThreadedDecoder::decoded << ", " << MultiThreadedDecoder::bytes;
 	std::stringstream ssmid;
-	ssmid << "#: " << _successfulScans << " / " << _calls << ". scan: " << _scanTicks << ", extract: " << _extractTicks;
+	ssmid << "#: " << _successfulScans << " / " << _calls << ". scan: " << _scanTicks << ", deskew: " << Deskewer::getTicks();
 	std::stringstream sslow;
 	sslow << "decode: " << _decodeTicks << ", idecode: " << Decoder::getTicks() << ", bytes: " << Decoder::getBytesWritten();
 	std::stringstream sreader;
@@ -67,6 +74,7 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 	std::stringstream ssbot;
 	ssbot << "dcolor: " << CimbDecoder::decodeColorTicks() << ", bc: " << CimbDecoder::bestColorTicks() << ", avgcolor: " << CimbDecoder::avgColorTicks();
 
+	cv::putText(mat, sstop.str(), cv::Point(5,100), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 	cv::putText(mat, ssmid.str(), cv::Point(5,200), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 	cv::putText(mat, sslow.str(), cv::Point(5,250), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 	cv::putText(mat, sreader.str(), cv::Point(5,300), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);

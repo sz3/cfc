@@ -10,7 +10,10 @@ class MultiThreadedDecoder
 public:
 	MultiThreadedDecoder();
 
-	bool add(cv::Mat img);
+	inline static clock_t bytes = 0;
+	inline static clock_t decoded = 0;
+
+	bool add(const cv::Mat& img);
 	cv::Mat pop();
 
 	void stop();
@@ -29,13 +32,11 @@ inline MultiThreadedDecoder::MultiThreadedDecoder()
 	_pool.start();
 }
 
-inline bool MultiThreadedDecoder::add(cv::Mat img)
+inline bool MultiThreadedDecoder::add(const cv::Mat& img)
 {
 	return _pool.try_execute( [&, img] () {
-		cv::Mat& working = const_cast<cv::Mat&>(img);
-		if (!_ext.extract(working, working))
-			return;
-		_dec.decode(working, "/run/shm/notyet.txt");
+		bytes += _dec.decode(img, "/run/shm/notyet.txt");
+		++decoded;
 	} );
 }
 

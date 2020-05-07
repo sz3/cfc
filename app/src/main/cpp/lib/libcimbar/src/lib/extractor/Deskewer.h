@@ -11,6 +11,8 @@ class Deskewer
 public:
 	Deskewer(unsigned total_size=1024, unsigned anchor_size=30);
 
+	static clock_t getTicks();
+
 	cv::Mat deskew(std::string img, const Corners& corners);
 	cv::Mat deskew(const cv::Mat& img, const Corners& corners);
 	bool save(const cv::Mat& img, std::string path);

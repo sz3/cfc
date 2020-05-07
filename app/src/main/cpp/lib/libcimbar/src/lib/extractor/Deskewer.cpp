@@ -1,8 +1,16 @@
 #include "Deskewer.h"
 
+#include "util/Timer.h"
 #include <iostream>
 using cv::Point2f;
 using std::vector;
+
+static clock_t _ticks = 0;
+
+clock_t Deskewer::getTicks()
+{
+	return _ticks;
+}
 
 Deskewer::Deskewer(unsigned total_size, unsigned anchor_size)
     : _totalSize(total_size)
@@ -17,6 +25,8 @@ cv::Mat Deskewer::deskew(std::string img, const Corners& corners)
 
 cv::Mat Deskewer::deskew(const cv::Mat& img, const Corners& corners)
 {
+	Timer t(_ticks);
+
 	vector<Point2f> outputPoints;
 	outputPoints.push_back(Point2f(_anchorSize, _anchorSize));
 	outputPoints.push_back(Point2f(_totalSize - _anchorSize, _anchorSize));
