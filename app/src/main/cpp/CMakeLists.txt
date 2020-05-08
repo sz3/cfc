@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.4.1)
 
 project ( cfc )
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DANDROID=1")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -mllvm -inline-threshold=5000")
 
 # opencv stuff
