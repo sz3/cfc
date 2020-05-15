@@ -89,7 +89,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 
     @Override
     public void onPause() {
-        pauseJNI();
+        shutdownJNI();
         super.onPause();
         if (mOpenCvCameraView != null)
             mOpenCvCameraView.disableView();
@@ -105,7 +105,6 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
             Log.d(TAG, "OpenCV library found inside package. Using it!");
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
-        resumeJNI();
     }
 
     @Override
@@ -137,7 +136,5 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     }
 
     private native void processImageJNI(long mat);
-    private native void pauseJNI();
-    private native void resumeJNI();
     private native void shutdownJNI();
 }
