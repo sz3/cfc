@@ -14,11 +14,13 @@ set( OPENCV_LIBS "lib_opencv" )
 # our stuff
 set (PROJECTS
    lib/cfc-cpp
+   lib/concurrent
    lib/libcimbar
 )
 
 include_directories(
         ${OpenCV_DIR}/jni/include
+        lib
         lib/libcimbar/src/lib
 )
 

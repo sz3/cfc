@@ -12,7 +12,9 @@
 class Processing
 {
 public:
-	Processing() {}
+	Processing()
+		: _dec(0)
+	{}
 
 	std::vector<Anchor> scan(cv::Mat& mat)
 	{
@@ -28,8 +30,7 @@ public:
 	cv::Mat extract(cv::Mat& mat, const std::vector<Anchor>& points)
 	{
 		Corners corners(points[0].center(), points[1].center(), points[2].center(), points[3].center());
-		Deskewer de;
-		cv::Mat out = de.deskew(mat, corners);
+		cv::Mat out = _desk.deskew(mat, corners);
 		cv::rotate(out, out, cv::ROTATE_90_CLOCKWISE);
 
 		std::stringstream sstop;
@@ -40,8 +41,7 @@ public:
 
 	unsigned decode(cv::Mat& mat, const cv::Mat& img)
 	{
-		Decoder de(0);
-		unsigned res = de.decode(img, "/dev/shm/camerafilecopy.tmp.txt");
+		unsigned res = _dec.decode(img, "/dev/shm/camerafilecopy.tmp.txt");
 
 		std::stringstream sstop;
 		sstop << "decoded " << res << " bytes.";
@@ -50,4 +50,6 @@ public:
 	}
 
 protected:
+	Deskewer _desk;
+	Decoder _dec;
 };
