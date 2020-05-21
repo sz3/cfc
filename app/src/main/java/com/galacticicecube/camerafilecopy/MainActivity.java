@@ -24,6 +24,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     private static final int CAMERA_PERMISSION_REQUEST = 1;
 
     private CameraBridgeViewBase mOpenCvCameraView;
+    private String dataPath;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -60,7 +61,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
                 2
         );
 
-        String path = this.getExternalFilesDir(null).getPath();
+        this.dataPath = this.getExternalFilesDir(null).getPath();
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_main);
@@ -129,12 +130,12 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         Mat mat = frame.rgba();
 
         // native call to process current camera frame
-        processImageJNI(mat.getNativeObjAddr());
+        processImageJNI(mat.getNativeObjAddr(), this.dataPath);
 
         // return processed frame for live preview
         return mat;
     }
 
-    private native void processImageJNI(long mat);
+    private native void processImageJNI(long mat, String path);
     private native void shutdownJNI();
 }

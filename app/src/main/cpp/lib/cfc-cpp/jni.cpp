@@ -28,17 +28,18 @@ namespace {
 
 extern "C" {
 void JNICALL
-Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env, jobject instance, jlong matAddr) {
-
+Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env, jobject instance, jlong matAddr, jstring dataPathObj)
+{
 	++_calls;
 
-	// get Mat from raw address
+	// get Mat and path from raw address
 	Mat &mat = *(Mat *) matAddr;
+	string dataPath(env->GetStringUTFChars(dataPathObj, NULL));
 
 	clock_t begin = clock();
 
 	if (!_proc)
-		_proc = std::make_shared<MultiThreadedDecoder>();
+		_proc = std::make_shared<MultiThreadedDecoder>(dataPath);
 
 	Scanner scanner(mat);
 	std::vector<Anchor> anchors = scanner.scan();
@@ -59,7 +60,7 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 	if (_calls % 10 == 0 and anchors.size() > 0 and anchors.size() < 4)
 	{
 		std::stringstream fname;
-		fname << "/storage/emulated/0/Android/data/com.galacticicecube.camerafilecopy/files/myimage" << _calls << ".png";
+		fname << dataPath << "/myimage" << _calls << ".png";
 		//cv::imwrite(fname.str(), mat);
 	}
 

@@ -16,11 +16,11 @@ target_link_libraries(cfc-cpp
 
 -Wl,--start-group
         cimb_translator
-	encoder
 	extractor
 -Wl,--end-group
 
         correct
+        wirehair
         ${OPENCV_LIBS}
         ${log-lib}
 )
