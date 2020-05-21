@@ -22,6 +22,7 @@ include_directories(
         ${OpenCV_DIR}/jni/include
         lib
         lib/libcimbar/src/lib
+        lib/libcimbar/src/third_party_lib
 )
 
 foreach(proj ${PROJECTS})

@@ -22,7 +22,7 @@ public:
 		std::vector<Anchor> anchors = scanner.scan();
 
 		std::stringstream sstop;
-		sstop << mat.rows << " x " << mat.cols << " : " << anchors.size() << " anchors.";
+		sstop << "" << mat.rows << " x " << mat.cols << " : " << anchors.size() << " anchors.";
 		cv::putText(mat, sstop.str(), cv::Point(5,50), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 		return anchors;
 	}
@@ -34,14 +34,15 @@ public:
 		cv::rotate(out, out, cv::ROTATE_90_CLOCKWISE);
 
 		std::stringstream sstop;
-		sstop << out.rows << " x " << out.cols;
+		sstop << "" << out.rows << " x " << out.cols;
 		cv::putText(mat, sstop.str(), cv::Point(5,100), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 		return out;
 	}
 
 	unsigned decode(cv::Mat& mat, const cv::Mat& img)
 	{
-		unsigned res = _dec.decode(img, "/dev/shm/camerafilecopy.tmp.txt");
+		std::stringstream ss;
+		unsigned res = _dec.decode(img, ss);
 
 		std::stringstream sstop;
 		sstop << "decoded " << res << " bytes.";

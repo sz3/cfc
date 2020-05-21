@@ -37,7 +37,8 @@ inline bool MultiThreadedDecoder::add(const cv::Mat& img)
 {
 	return _pool.try_execute( [&, img] () {
 		clock_t begin = clock();
-		bytes += _dec.decode(img, "/run/shm/notyet.txt");
+		std::stringstream ss;
+		bytes += _dec.decode(img, ss);
 		++decoded;
 		ticks += clock() - begin;
 	} );
