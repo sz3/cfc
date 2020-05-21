@@ -2,6 +2,8 @@
 
 #include "encoder/Decoder.h"
 #include "extractor/Extractor.h"
+#include "fountain/fountain_decoder_sink.h"
+
 #include "concurrent/thread_pool.h"
 #include <opencv2/opencv.hpp>
 
@@ -23,6 +25,7 @@ protected:
 	Extractor _ext;
 	Decoder _dec;
 	turbo::thread_pool _pool;
+	concurrent_fountain_decoder_sink<599> _writer;
 };
 
 inline MultiThreadedDecoder::MultiThreadedDecoder()
@@ -37,8 +40,7 @@ inline bool MultiThreadedDecoder::add(const cv::Mat& img)
 {
 	return _pool.try_execute( [&, img] () {
 		clock_t begin = clock();
-		std::stringstream ss;
-		bytes += _dec.decode(img, ss);
+		bytes += _dec.decode(img, _writer);
 		++decoded;
 		ticks += clock() - begin;
 	} );
