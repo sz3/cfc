@@ -13,6 +13,7 @@ set (PROJECTS
 	src/lib/cimb_translator
 	src/lib/encoder
 	src/lib/extractor
+	src/lib/fountain
 	src/lib/image_hash
 	src/lib/serialize
 	src/lib/util
@@ -22,6 +23,7 @@ set (PROJECTS
 	src/third_party_lib/intx
 	src/third_party_lib/libcorrect
 	src/third_party_lib/libpopcnt
+	src/third_party_lib/wirehair
 )
 
 include_directories(
