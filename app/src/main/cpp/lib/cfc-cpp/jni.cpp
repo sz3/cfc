@@ -54,7 +54,10 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 		_extractTicks += (clock() - begin);
 
 		cv::cvtColor(img, img, COLOR_RGB2BGR); // android JavaCameraView shenanigans defeated?
-		_proc->add(img);
+
+		// TODO: use corners for this
+		bool shouldPreprocess = (mat.cols < img.cols or mat.rows < img.rows);
+		_proc->add(img, shouldPreprocess);
 	}
 
 	if (_calls % 10 == 0 and anchors.size() > 0 and anchors.size() < 4)
@@ -65,7 +68,7 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 	}
 
 	std::stringstream sstop;
-	sstop << "MTD says: " << std::thread::hardware_concurrency() << " thread(s), " << MultiThreadedDecoder::decoded << ", " << MultiThreadedDecoder::bytes;
+	sstop << "MTD says: " << _proc->num_threads() << " thread(s), " << MultiThreadedDecoder::decoded << ", " << MultiThreadedDecoder::bytes;
 	std::stringstream ssmid;
 	ssmid << "#: " << _successfulScans << " / " << _calls << ". scan: " << _scanTicks << ", deskew: " << _extractTicks << ", decode: " << MultiThreadedDecoder::ticks;
 
