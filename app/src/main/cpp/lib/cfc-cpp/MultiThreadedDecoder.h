@@ -32,10 +32,10 @@ protected:
 };
 
 inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path)
-	: _dec(0)
-    , _numThreads(std::max<int>(((int)std::thread::hardware_concurrency())-1, 1))
-    , _pool(_numThreads, 1)
-    , _writer(data_path)
+	: _dec()
+	, _numThreads(std::max<int>(((int)std::thread::hardware_concurrency())-1, 1))
+	, _pool(_numThreads, 1)
+	, _writer(data_path)
 {
 	_pool.start();
 }
