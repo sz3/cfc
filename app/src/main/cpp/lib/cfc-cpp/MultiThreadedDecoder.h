@@ -26,7 +26,7 @@ protected:
 	Decoder _dec;
 	unsigned _numThreads;
 	turbo::thread_pool _pool;
-	concurrent_fountain_decoder_sink<599> _writer;
+	concurrent_fountain_decoder_sink<626> _writer;
 };
 
 inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path)
@@ -42,7 +42,7 @@ inline bool MultiThreadedDecoder::add(const cv::Mat& img, bool should_preprocess
 {
 	return _pool.try_execute( [&, img, should_preprocess] () {
 		clock_t begin = clock();
-		bytes += _dec.decode(img, _writer, should_preprocess);
+		bytes += _dec.decode_fountain(img, _writer, should_preprocess);
 		++decoded;
 		ticks += clock() - begin;
 	} );

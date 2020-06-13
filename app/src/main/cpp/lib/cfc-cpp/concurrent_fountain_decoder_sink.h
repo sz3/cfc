@@ -14,6 +14,16 @@ public:
 	{
 	}
 
+	unsigned chunk_size() const
+	{
+		return _decoder.chunk_size();
+	}
+
+	unsigned md_size() const
+	{
+		return _decoder.md_size();
+	}
+
 	void process()
 	{
 		if (_mutex.try_lock())
