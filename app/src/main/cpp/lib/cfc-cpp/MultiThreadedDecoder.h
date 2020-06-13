@@ -21,6 +21,8 @@ public:
 	void stop();
 
 	unsigned num_threads() const;
+	unsigned files_in_flight() const;
+	unsigned files_decoded() const;
 
 protected:
 	Decoder _dec;
@@ -56,4 +58,14 @@ inline void MultiThreadedDecoder::stop()
 inline unsigned MultiThreadedDecoder::num_threads() const
 {
 	return _numThreads;
+}
+
+inline unsigned MultiThreadedDecoder::files_in_flight() const
+{
+	return _writer.num_streams();
+}
+
+inline unsigned MultiThreadedDecoder::files_decoded() const
+{
+	return _writer.num_done();
 }
