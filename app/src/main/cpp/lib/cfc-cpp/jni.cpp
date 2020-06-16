@@ -69,7 +69,7 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 		_extractTicks += (clock() - begin);
 
 		cv::rotate(img, img, cv::ROTATE_90_CLOCKWISE);
-		cv::cvtColor(img, img, COLOR_RGB2BGR); // android JavaCameraView shenanigans defeated?
+		cv::cvtColor(img, img, COLOR_RGB2BGR); // opencv JavaCameraView shenanigans defeated?
 
 		// if extracted image is small, we'll need to run some filters on it
 		bool shouldPreprocess = !corners.is_granular_scale(de.total_size());
