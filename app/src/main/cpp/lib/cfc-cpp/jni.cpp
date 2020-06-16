@@ -29,6 +29,10 @@ namespace {
 	unsigned long long _scanTicks = 0;
 	unsigned long long _extractTicks = 0;
 	unsigned long long _decodeTicks = 0;
+
+	std::string _lastReport;
+	unsigned long long _lastBytes = 0;
+	unsigned long long _lastDecoded = 0;
 }
 
 extern "C" {
@@ -64,6 +68,7 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 		cv::Mat img = de.deskew(mat, corners);
 		_extractTicks += (clock() - begin);
 
+		cv::rotate(img, img, cv::ROTATE_90_CLOCKWISE);
 		cv::cvtColor(img, img, COLOR_RGB2BGR); // android JavaCameraView shenanigans defeated?
 
 		// if extracted image is small, we'll need to run some filters on it
@@ -71,15 +76,38 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 		_proc->add(img, shouldPreprocess);
 	}
 
-	if (_calls % 10 == 0 and anchors.size() > 0 and anchors.size() < 4)
+	if (_calls % 10 == 0 and anchors.size() == 4)
 	{
 		std::stringstream fname;
 		fname << dataPath << "/myimage" << _calls << ".png";
 		//cv::imwrite(fname.str(), mat);
 	}
 
+	if (_calls % 10 == 0)
+	{
+		// check MultiThreadedDecoder metrics, only reset if we're failing a lot
+		// for the first pass, use bytes / decoded, and checkpoint???
+		unsigned long long currentBytes = _proc->bytes;
+		unsigned long long currentDec = _proc->decoded;
+
+		unsigned long long frames = currentDec - _lastDecoded;
+		if (frames != 0)
+		{
+			unsigned long long perFrame = (currentBytes - _lastBytes) / frames;
+			if (perFrame < 4000)
+				_und->reset_distortion_params();
+
+			std::stringstream rep;
+			rep << ", Per frame: " << perFrame;
+			_lastReport = rep.str();
+		}
+
+		_lastDecoded = currentDec;
+		_lastBytes = currentBytes;
+	}
+
 	std::stringstream sstop;
-	sstop << "MTD says: " << _proc->num_threads() << " thread(s), " << MultiThreadedDecoder::decoded << ", " << MultiThreadedDecoder::bytes;
+	sstop << "MTD says: " << _proc->num_threads() << " thread(s), " << MultiThreadedDecoder::decoded << ", " << MultiThreadedDecoder::bytes << _lastReport;
 	std::stringstream ssmid;
 	ssmid << "#: " << _successfulScans << " / " << _calls << ". scan: " << _scanTicks << ", deskew: " << _extractTicks << ", decode: " << MultiThreadedDecoder::ticks;
 	std::stringstream ssbot;
