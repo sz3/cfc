@@ -16,7 +16,7 @@ public:
 	inline static clock_t ticks = 0;
 
 	bool add(const cv::Mat& img, bool should_preprocess);
-	cv::Mat pop();
+	bool save(std::string path, const cv::Mat& img);
 
 	void stop();
 
@@ -47,6 +47,13 @@ inline bool MultiThreadedDecoder::add(const cv::Mat& img, bool should_preprocess
 		bytes += _dec.decode_fountain(img, _writer, should_preprocess);
 		++decoded;
 		ticks += clock() - begin;
+	} );
+}
+
+inline bool MultiThreadedDecoder::save(std::string path, const cv::Mat& img)
+{
+	return _pool.try_execute( [&, img, path] () {
+		cv::imwrite(path, img);
 	} );
 }
 

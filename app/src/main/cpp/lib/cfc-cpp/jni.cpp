@@ -80,7 +80,7 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 	{
 		std::stringstream fname;
 		fname << dataPath << "/myimage" << _calls << ".png";
-		//cv::imwrite(fname.str(), mat);
+		//_proc->save(fname.str(), mat.clone());
 	}
 
 	if (_calls % 10 == 0)
