@@ -37,6 +37,7 @@ inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path)
 	, _pool(_numThreads, 1)
 	, _writer(data_path)
 {
+	FountainInit::init();
 	_pool.start();
 }
 

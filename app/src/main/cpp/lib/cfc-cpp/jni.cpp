@@ -47,10 +47,10 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 
 	clock_t begin = clock();
 
-	if (!_und)
-		_und = std::make_shared< Undistort<SimpleCameraCalibration> >();
 	if (!_proc)
 		_proc = std::make_shared<MultiThreadedDecoder>(dataPath);
+	if (!_und)
+		_und = std::make_shared< Undistort<SimpleCameraCalibration> >();
 
 	// could move undistort after the first scanner check... we'll see
 	_und->undistort(mat, mat);
