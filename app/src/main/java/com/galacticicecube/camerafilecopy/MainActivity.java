@@ -46,7 +46,9 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     public void onCreate(Bundle savedInstanceState) {
         Log.i(TAG, "called onCreate");
         super.onCreate(savedInstanceState);
+
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
         // Permissions for Android 6+
         ActivityCompat.requestPermissions(
@@ -63,13 +65,9 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 
         this.dataPath = this.getExternalFilesDir(null).getPath();
 
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_main);
-
         mOpenCvCameraView = findViewById(R.id.main_surface);
-
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
-
         mOpenCvCameraView.setCvCameraViewListener(this);
     }
 
