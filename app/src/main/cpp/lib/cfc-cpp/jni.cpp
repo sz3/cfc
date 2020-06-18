@@ -52,11 +52,10 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 		_und = std::make_shared< Undistort<SimpleCameraCalibration> >();
 
 	// could move undistort after the first scanner check... we'll see
-	Mat img;
-	_und->undistort(mat, img);
+	_und->undistort(mat, mat);
 	_undistortTicks += (clock() - begin);
 
-	_proc->add(img);
+	_proc->add(mat.clone());
 
 	/*
 	Scanner scanner(mat);
@@ -86,7 +85,7 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 		_proc->save(fname.str(), mat.clone());
 	}*/
 
-	if (_calls % 10 == 0)
+	if (_calls % 60 == 0)
 	{
 		// check MultiThreadedDecoder metrics, only reset if we're failing a lot
 		// for the first pass, use bytes / decoded, and checkpoint???

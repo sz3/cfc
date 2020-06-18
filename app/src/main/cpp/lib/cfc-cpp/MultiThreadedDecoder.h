@@ -18,7 +18,7 @@ public:
 	inline static clock_t extracted = 0;
 	inline static clock_t extractTicks = 0;
 
-	bool add(const cv::Mat& mat);
+	bool add(cv::Mat mat);
 	bool decode(const cv::Mat& img, bool should_preprocess);
 	bool save(std::string path, const cv::Mat& img);
 
@@ -45,7 +45,7 @@ inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path)
 	_pool.start();
 }
 
-inline bool MultiThreadedDecoder::add(const cv::Mat& mat)
+inline bool MultiThreadedDecoder::add(cv::Mat mat)
 {
 	return _pool.try_execute( [&, mat] () {
 		clock_t begin = clock();
@@ -55,9 +55,10 @@ inline bool MultiThreadedDecoder::add(const cv::Mat& mat)
 		int res = ex.extract(mat, img);
 		if (res == Extractor::FAILURE)
 			return;
+		++extracted;
 		extractTicks += (clock() - begin);
 
-		/*cv::rotate(img, img, cv::ROTATE_90_CLOCKWISE);
+		cv::rotate(img, img, cv::ROTATE_90_CLOCKWISE);
 		cv::cvtColor(img, img, cv::COLOR_RGB2BGR); // opencv JavaCameraView shenanigans defeated?
 
 		// if extracted image is small, we'll need to run some filters on it
@@ -65,7 +66,7 @@ inline bool MultiThreadedDecoder::add(const cv::Mat& mat)
 		bool should_preprocess = (res == Extractor::NEEDS_SHARPEN);
 		bytes += _dec.decode_fountain(img, _writer, should_preprocess);
 		++decoded;
-		decodeTicks += clock() - begin;*/
+		decodeTicks += clock() - begin;
 	} );
 }
 
