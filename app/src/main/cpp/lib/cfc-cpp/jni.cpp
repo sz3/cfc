@@ -24,11 +24,10 @@ namespace {
 	std::shared_ptr<MultiThreadedDecoder> _proc;
 
 	unsigned _calls = 0;
-	unsigned _successfulScans = 0;
+	//unsigned _successfulScans = 0;
 	unsigned long long _undistortTicks = 0;
-	unsigned long long _scanTicks = 0;
-	unsigned long long _extractTicks = 0;
-	unsigned long long _decodeTicks = 0;
+	//unsigned long long _scanTicks = 0;
+	//unsigned long long _extractTicks = 0;
 
 	std::string _lastReport;
 	unsigned long long _lastBytes = 0;
@@ -53,9 +52,13 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 		_und = std::make_shared< Undistort<SimpleCameraCalibration> >();
 
 	// could move undistort after the first scanner check... we'll see
-	_und->undistort(mat, mat);
+	Mat img;
+	_und->undistort(mat, img);
 	_undistortTicks += (clock() - begin);
 
+	_proc->add(img);
+
+	/*
 	Scanner scanner(mat);
 	std::vector<Anchor> anchors = scanner.scan();
 	if (anchors.size() >= 4)
@@ -74,14 +77,14 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 		// if extracted image is small, we'll need to run some filters on it
 		bool shouldPreprocess = !corners.is_granular_scale(de.total_size());
 		_proc->add(img, shouldPreprocess);
-	}
+	}*/
 
-	if (_calls % 10 == 0 and anchors.size() == 4)
+	/*if (_calls % 10 == 0 and anchors.size() == 4)
 	{
 		std::stringstream fname;
 		fname << dataPath << "/myimage" << _calls << ".png";
-		//_proc->save(fname.str(), mat.clone());
-	}
+		_proc->save(fname.str(), mat.clone());
+	}*/
 
 	if (_calls % 10 == 0)
 	{
@@ -109,7 +112,7 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 	std::stringstream sstop;
 	sstop << "MTD says: " << _proc->num_threads() << " thread(s), " << MultiThreadedDecoder::decoded << ", " << MultiThreadedDecoder::bytes << _lastReport;
 	std::stringstream ssmid;
-	ssmid << "#: " << _successfulScans << " / " << _calls << ". undistort: " << _undistortTicks << ", scan: " << _scanTicks << ", deskew: " << _extractTicks << ", decode: " << MultiThreadedDecoder::ticks;
+	ssmid << "#: " << MultiThreadedDecoder::extracted << " / " << _calls << ". undistort: " << _undistortTicks << ", extract: " << MultiThreadedDecoder::extractTicks << ", decode: " << MultiThreadedDecoder::decodeTicks;
 	std::stringstream ssbot;
 	ssbot << "Files received: " << _proc->files_decoded() << ", in flight: " << _proc->files_in_flight();
 
@@ -117,8 +120,8 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 	cv::putText(mat, ssmid.str(), cv::Point(5,100), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 	cv::putText(mat, ssbot.str(), cv::Point(5,150), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 
-	for (const Anchor& anchor : anchors)
-		cv::rectangle(mat, cv::Point(anchor.x(), anchor.y()), cv::Point(anchor.xmax(), anchor.ymax()), cv::Scalar(255,20,20), 10);
+	/*for (const Anchor& anchor : anchors)
+		cv::rectangle(mat, cv::Point(anchor.x(), anchor.y()), cv::Point(anchor.xmax(), anchor.ymax()), cv::Scalar(255,20,20), 10);*/
 
 	// log computation time to Android Logcat
 	double totalTime = double(clock() - begin) / CLOCKS_PER_SEC;

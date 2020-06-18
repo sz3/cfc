@@ -2,6 +2,7 @@
 
 #include "concurrent_fountain_decoder_sink.h"
 #include "encoder/Decoder.h"
+#include "extractor/Extractor.h"
 
 #include "concurrent/thread_pool.h"
 #include <opencv2/opencv.hpp>
@@ -13,9 +14,12 @@ public:
 
 	inline static clock_t bytes = 0;
 	inline static clock_t decoded = 0;
-	inline static clock_t ticks = 0;
+	inline static clock_t decodeTicks = 0;
+	inline static clock_t extracted = 0;
+	inline static clock_t extractTicks = 0;
 
-	bool add(const cv::Mat& img, bool should_preprocess);
+	bool add(const cv::Mat& mat);
+	bool decode(const cv::Mat& img, bool should_preprocess);
 	bool save(std::string path, const cv::Mat& img);
 
 	void stop();
@@ -41,13 +45,37 @@ inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path)
 	_pool.start();
 }
 
-inline bool MultiThreadedDecoder::add(const cv::Mat& img, bool should_preprocess)
+inline bool MultiThreadedDecoder::add(const cv::Mat& mat)
+{
+	return _pool.try_execute( [&, mat] () {
+		clock_t begin = clock();
+		Extractor ex;
+
+		cv::Mat img;
+		int res = ex.extract(mat, img);
+		if (res == Extractor::FAILURE)
+			return;
+		extractTicks += (clock() - begin);
+
+		/*cv::rotate(img, img, cv::ROTATE_90_CLOCKWISE);
+		cv::cvtColor(img, img, cv::COLOR_RGB2BGR); // opencv JavaCameraView shenanigans defeated?
+
+		// if extracted image is small, we'll need to run some filters on it
+		begin = clock();
+		bool should_preprocess = (res == Extractor::NEEDS_SHARPEN);
+		bytes += _dec.decode_fountain(img, _writer, should_preprocess);
+		++decoded;
+		decodeTicks += clock() - begin;*/
+	} );
+}
+
+inline bool MultiThreadedDecoder::decode(const cv::Mat& img, bool should_preprocess)
 {
 	return _pool.try_execute( [&, img, should_preprocess] () {
 		clock_t begin = clock();
 		bytes += _dec.decode_fountain(img, _writer, should_preprocess);
 		++decoded;
-		ticks += clock() - begin;
+		decodeTicks += clock() - begin;
 	} );
 }
 
