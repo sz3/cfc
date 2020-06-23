@@ -15,7 +15,7 @@ public:
 	inline static clock_t bytes = 0;
 	inline static clock_t decoded = 0;
 	inline static clock_t decodeTicks = 0;
-	inline static clock_t extracted = 0;
+	inline static clock_t scanned = 0;
 	inline static clock_t extractTicks = 0;
 
 	bool add(cv::Mat mat);
@@ -25,6 +25,7 @@ public:
 	void stop();
 
 	unsigned num_threads() const;
+	unsigned backlog() const;
 	unsigned files_in_flight() const;
 	unsigned files_decoded() const;
 
@@ -53,9 +54,9 @@ inline bool MultiThreadedDecoder::add(cv::Mat mat)
 
 		cv::Mat img;
 		int res = ex.extract(mat, img);
+		++scanned;
 		if (res == Extractor::FAILURE)
 			return;
-		++extracted;
 		extractTicks += (clock() - begin);
 
 		cv::rotate(img, img, cv::ROTATE_90_CLOCKWISE);
@@ -95,6 +96,11 @@ inline void MultiThreadedDecoder::stop()
 inline unsigned MultiThreadedDecoder::num_threads() const
 {
 	return _numThreads;
+}
+
+inline unsigned MultiThreadedDecoder::backlog() const
+{
+	return _pool.queued();
 }
 
 inline unsigned MultiThreadedDecoder::files_in_flight() const

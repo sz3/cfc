@@ -30,8 +30,22 @@ namespace {
 	//unsigned long long _extractTicks = 0;
 
 	std::string _lastReport;
-	unsigned long long _lastBytes = 0;
-	unsigned long long _lastDecoded = 0;
+	unsigned long long _ignoreUntilFrame = 0;
+	unsigned long long _lastDecodedBytes = 0;
+	unsigned long long _lastDecodedFrames = 0;
+
+	void updateUndistortTracker(const MultiThreadedDecoder& decoder)
+	{
+		_lastDecodedBytes = decoder.bytes;
+		_lastDecodedFrames = decoder.decoded;
+	}
+
+	unsigned no0(unsigned num)
+	{
+		if (!num)
+			return 1;
+		return num;
+	}
 }
 
 extern "C" {
@@ -85,6 +99,10 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 		_proc->save(fname.str(), mat.clone());
 	}*/
 
+	unsigned scanFrame = _proc->scanned;
+	if (scanFrame == _ignoreUntilFrame)
+		updateUndistortTracker(*_proc);
+
 	if (_calls % 60 == 0)
 	{
 		// check MultiThreadedDecoder metrics, only reset if we're failing a lot
@@ -92,10 +110,10 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 		unsigned long long currentBytes = _proc->bytes;
 		unsigned long long currentDec = _proc->decoded;
 
-		unsigned long long frames = currentDec - _lastDecoded;
+		unsigned long long frames = currentDec - _lastDecodedFrames;
 		if (frames != 0)
 		{
-			unsigned long long perFrame = (currentBytes - _lastBytes) / frames;
+			unsigned long long perFrame = (currentBytes - _lastDecodedBytes) / frames;
 			if (perFrame < 4000)
 				_und->reset_distortion_params();
 
@@ -104,14 +122,16 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 			_lastReport = rep.str();
 		}
 
-		_lastDecoded = currentDec;
-		_lastBytes = currentBytes;
+		_ignoreUntilFrame = _proc->scanned + _proc->backlog();
+		updateUndistortTracker(*_proc);
 	}
 
 	std::stringstream sstop;
-	sstop << "MTD says: " << _proc->num_threads() << " thread(s), " << MultiThreadedDecoder::decoded << ", " << MultiThreadedDecoder::bytes << _lastReport;
+	sstop << "MTD says: " << _proc->num_threads() << " thread(s), " << MultiThreadedDecoder::bytes << _lastReport;
 	std::stringstream ssmid;
-	ssmid << "#: " << MultiThreadedDecoder::extracted << " / " << _calls << ". undistort: " << _undistortTicks << ", extract: " << MultiThreadedDecoder::extractTicks << ", decode: " << MultiThreadedDecoder::decodeTicks;
+	ssmid << "#: " << MultiThreadedDecoder::decoded << " / " << MultiThreadedDecoder::scanned << " / " << _calls;
+	ssmid << ". undistort: " << (_undistortTicks/no0(_calls)) << ", extract: " << (MultiThreadedDecoder::extractTicks / no0(MultiThreadedDecoder::decoded));
+	ssmid << ", decode: " << (MultiThreadedDecoder::decodeTicks / no0(MultiThreadedDecoder::decoded));
 	std::stringstream ssbot;
 	ssbot << "Files received: " << _proc->files_decoded() << ", in flight: " << _proc->files_in_flight();
 
