@@ -207,9 +207,15 @@ public class OpencvCamera2View extends CameraBridgeViewBase {
                         mCaptureSession = cameraCaptureSession;
                         try {
                             mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
-                                    CaptureRequest.CONTROL_AF_MODE_MACRO);
+                                    CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO);
                             mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
                                     CaptureRequest.CONTROL_AE_MODE_OFF);
+                            mPreviewRequestBuilder.set(CaptureRequest.SENSOR_SENSITIVITY,
+                                    100);
+                            mPreviewRequestBuilder.set(CaptureRequest.SENSOR_FRAME_DURATION,
+                                    16666666L);
+                            mPreviewRequestBuilder.set(CaptureRequest.SENSOR_EXPOSURE_TIME,
+                                    20400000L);
 
                             mCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(), null, mBackgroundHandler);
                             Log.i(LOGTAG, "CameraPreviewSession has been started");
