@@ -62,16 +62,17 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 		_und = std::make_shared< Undistort<SimpleCameraCalibration> >();
 
 	// could move undistort after the first scanner check... we'll see
-	_und->undistort(mat, mat);
+	cv::Mat img = mat.clone();
+	_und->undistort(img, img);
 	_undistortTicks += (clock() - begin);
 
-	_proc->add(mat.clone());
+	_proc->add(img);
 
 	/*if (_calls % 10 == 0) // and anchors.size() == 4)
 	{
 		std::stringstream fname;
 		fname << dataPath << "/myimage" << _calls << ".png";
-		_proc->save(fname.str(), mat.clone());
+		_proc->save(fname.str(), img);
 	}*/
 
 	unsigned scanFrame = _proc->scanned;
