@@ -1,5 +1,8 @@
 #include "Scanner.h"
 
+#include "Corners.h"
+#include "EdgeScanState.h"
+#include "Geometry.h"
 #include "ScanState.h"
 #include "serialize/format.h"
 #include <algorithm>
@@ -30,8 +33,15 @@ namespace {
 Scanner::Scanner(const cv::Mat& img, bool dark, int skip)
     : _dark(dark)
     , _skip(skip)
+    , _mergeCutoff(img.cols / 30)
+    , _anchorSize(30)
 {
 	_img = preprocess_image(img);
+}
+
+int Scanner::anchor_size() const
+{
+	return _anchorSize;
 }
 
 cv::Mat Scanner::preprocess_image(const cv::Mat& img)
@@ -71,7 +81,7 @@ std::vector<Anchor> Scanner::deduplicate_candidates(const std::vector<Anchor>& c
 		bool foundMerge = false;
 		for (Anchor& m : merged)
 		{
-			if (::abs(m.xavg() - c.xavg()) < 50 and ::abs(m.yavg() - c.yavg()) < 50)
+			if (m.within_merge_distance(c, _mergeCutoff))
 			{
 				foundMerge = true;
 				m.merge(c);
@@ -104,10 +114,16 @@ void Scanner::filter_candidates(std::vector<Anchor>& candidates) const
 		candidates.resize(i);
 }
 
-void Scanner::scan_horizontal(std::vector<Anchor>& points, int y) const
+bool Scanner::scan_horizontal(std::vector<Anchor>& points, int y, int xstart, int xend) const
 {
+	if (xstart < 0)
+		xstart = 0;
+	if (xend < 0 or xend > _img.cols)
+		xend = _img.cols;
+
+	unsigned initCount = points.size();
 	ScanState state;
-	for (int x = 0; x < _img.cols; ++x)
+	for (int x = xstart; x < xend; ++x)
 	{
 		bool active = test_pixel(x, y);
 		int res = state.process(active);
@@ -115,38 +131,45 @@ void Scanner::scan_horizontal(std::vector<Anchor>& points, int y) const
 			points.push_back(Anchor(x-res, x-1, y, y));
 	}
 
-	// if the pattern is at the edge of the image
+	// if the pattern is at the edge of the range
 	int res = state.process(false);
 	if (res > 0)
 	{
-		int x = _img.cols;
+		int x = xend;
 		points.push_back(Anchor(x-res, x-1, y, y));
 	}
+	return initCount != points.size();
 }
 
-void Scanner::scan_vertical(std::vector<Anchor>& points, int x, int ystart, int yend) const
+bool Scanner::scan_vertical(std::vector<Anchor>& points, int x, int xmax, int ystart, int yend) const
 {
+	if (xmax < 0)
+		xmax = x;
+	int xavg = (x + xmax) / 2;
+
 	if (ystart < 0)
 		ystart = 0;
 	if (yend < 0 or yend > _img.rows)
 		yend = _img.rows;
 
+	unsigned initCount = points.size();
 	ScanState state;
 	for (int y = ystart; y < yend; ++y)
 	{
-		bool active = test_pixel(x, y);
+		bool active = test_pixel(xavg, y);
 		int res = state.process(active);
 		if (res > 0)
-			points.push_back(Anchor(x, x, y-res, y-1));
+			points.push_back(Anchor(x, xmax, y-res, y-1));
 	}
 
-	// if the pattern is at the edge of the image
+	// if the pattern is at the edge of the range
 	int res = state.process(false);
 	if (res > 0)
 	{
 		int y = yend;
-		points.push_back(Anchor(x, x, y-res, y-1));
+		points.push_back(Anchor(x, xmax, y-res, y-1));
 	}
+	return initCount != points.size();
 }
 
 void Scanner::scan_diagonal(std::vector<Anchor>& points, int xstart, int xend, int ystart, int yend) const
@@ -170,7 +193,8 @@ void Scanner::scan_diagonal(std::vector<Anchor>& points, int xstart, int xend, i
 
 	// do the scan
 	ScanState state;
-	for (int x = xstart, y = ystart; x < xend and y < yend; ++x, ++y)
+	int x = xstart, y = ystart;
+	for (; x < xend and y < yend; ++x, ++y)
 	{
 		bool active = test_pixel(x, y);
 		int res = state.process(active);
@@ -178,14 +202,10 @@ void Scanner::scan_diagonal(std::vector<Anchor>& points, int xstart, int xend, i
 			points.push_back(Anchor(x-res, x, y-res, y));
 	}
 
-	// if the pattern is at the edge of the image
+	// if the pattern is at the edge of the range
 	int res = state.process(false);
 	if (res > 0)
-	{
-		int x = xend;
-		int y = yend;
 		points.push_back(Anchor(x-res, x, y-res, y));
-	}
 }
 
 std::vector<Anchor> Scanner::t1_scan_rows() const
@@ -203,22 +223,51 @@ std::vector<Anchor> Scanner::t2_scan_columns(const std::vector<Anchor>& candidat
 	{
 		int ystart = p.y() - (3 * p.xrange());
 		int yend = p.ymax() + (3 * p.xrange());
-		scan_vertical(points, p.xavg(), ystart, yend);
+		scan_vertical(points, p.x(), p.xmax(), ystart, yend);
 	}
 	return points;
 }
 
 std::vector<Anchor> Scanner::t3_scan_diagonal(const std::vector<Anchor>& candidates) const
 {
-	// confirm
 	std::vector<Anchor> points;
 	for (const Anchor& p : candidates)
 	{
-		int xstart = p.x() - (2 * p.yrange());
-		int xend = p.xmax() + (2 * p.yrange());
+		int xstart = p.xavg() - (2 * p.yrange());
+		int xend = p.xavg() + (2 * p.yrange());
 		int ystart = p.y() - p.yrange();
 		int yend = p.ymax() + p.yrange();
 		scan_diagonal(points, xstart, xend, ystart, yend);
+	}
+	return points;
+}
+
+std::vector<Anchor> Scanner::t4_confirm_scan(const std::vector<Anchor>& candidates) const
+{
+	// because we have a lot of weird crap going on in the center of the image,
+	// do one more scan of our (theoretical) anchor points.
+	// this shouldn't be an issue for real anchors, but pretenders might get filtered out.
+	std::vector<Anchor> points;
+	for (const Anchor& p : candidates)
+	{
+		std::vector<Anchor> confirms;
+		int xstart = p.x() - p.xrange();
+		int xend = p.xmax() + p.xrange();
+		if (!scan_horizontal(confirms, p.yavg(), xstart, xend))
+			continue;
+
+		int ystart = p.y() - p.yrange();
+		int yend = p.ymax() + p.yrange();
+		if (!scan_vertical(confirms, p.xavg(), p.xavg(), ystart, yend))
+			continue;
+
+		Anchor merged(p);
+		for (const Anchor& co : confirms)
+		{
+			if (co.within_merge_distance(p, _mergeCutoff))
+				merged.merge(co);
+		}
+		points.push_back(merged);
 	}
 	return deduplicate_candidates(points);
 }
@@ -250,7 +299,84 @@ std::vector<Anchor> Scanner::scan()
 	// for all horizontal+vertical results, scan diagonal
 	candidates = t3_scan_diagonal(candidates);
 
+	// for all horizontal+vertical+diagonal results, do one more sanity check
+	candidates = t4_confirm_scan(candidates);
+
 	filter_candidates(candidates);
 	sort_top_to_bottom(candidates);
 	return candidates;
+}
+
+bool Scanner::chase_edge(const point<double>& start, const point<double>& unit) const
+{
+	// test 4 points. If we get 2/4, success
+	int success = 0;
+	for (int i : {-2, -1, 1, 2})
+	{
+		int x = start.x() + (unit.x() * i);
+		int y = start.y() + (unit.y() * i);
+		if (test_pixel(x, y))
+			++success;
+	}
+	return success >= 2;
+}
+
+point<int> Scanner::find_edge(const point<int>& u, const point<int>& v, point<double> mid) const
+{
+	// should probably use more floats!
+	point<double> distance_v = v.to_float() - u.to_float();
+	point<double> distance_unit = distance_v / 512.0;
+	point<double> out_v = {distance_v.y() / 64, distance_v.x() / -64};
+	point<double> in_v = {-out_v.x(), -out_v.y()};
+
+	if (mid == point<double>::NONE())
+		mid = u.to_float() + (distance_v / 2.0);
+	point<double> mid_point_anchor_adjust = out_v * (_anchorSize / 16.0);
+	mid += mid_point_anchor_adjust;
+
+	for (const point<double>& check : {out_v, in_v})
+	{
+		double max_check = std::max(abs(check.x()), abs(check.y()));
+		point<double> unit = check / max_check;
+
+		EdgeScanState state;
+		double i = 0, j = 0;
+		while (abs(i) <= abs(check.x()) and abs(j) <= abs(check.y()))
+		{
+			double x = mid.x() + i;
+			double y = mid.y() + j;
+			if (x < 0 or x >= _img.cols or y < 0 or y >= _img.rows)
+			{
+				i += unit.x();
+				j += unit.y();
+				continue;
+			}
+			bool active = test_pixel(x, y);
+			int size = state.process(active);
+			if (size > 0)
+			{
+				point<double> edge = {x - (unit.x() * size / 2), y - (unit.y() * size / 2)};
+				if (chase_edge(edge, distance_unit))
+					return edge.to_int();
+			}
+			i += unit.x();
+			j += unit.y();
+		}
+	}
+
+	return point<int>::NONE();
+}
+
+std::vector<point<int>> Scanner::scan_edges(const Corners& corners, Midpoints& mps) const
+{
+	std::vector<point<int>> edges;
+	mps = Geometry::calculate_midpoints(corners);
+	if (!mps)
+		return edges;
+
+	edges.push_back( find_edge(corners.top_left(), corners.top_right(), mps.top()) );
+	edges.push_back( find_edge(corners.top_right(), corners.bottom_right(), mps.right()) );
+	edges.push_back( find_edge(corners.bottom_right(), corners.bottom_left(), mps.bottom()) );
+	edges.push_back( find_edge(corners.bottom_left(), corners.top_left(), mps.left()) );
+	return edges;
 }
