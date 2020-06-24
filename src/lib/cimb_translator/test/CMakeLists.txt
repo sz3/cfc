@@ -4,12 +4,14 @@ project(cimb_translator_test)
 
 set (SOURCES
 	test.cpp
+	CellTest.cpp
 	CellDriftTest.cpp
 	CellPositionTest.cpp
 	CimbDecoderTest.cpp
 	CimbEncoderTest.cpp
 	CimbReaderTest.cpp
 	CimbWriterTest.cpp
+	InterleaveTest.cpp
 )
 
 include_directories(

@@ -6,6 +6,7 @@ set (SOURCES
 	test.cpp
 	DecoderTest.cpp
 	EncoderTest.cpp
+	aligned_streamTest.cpp
 	reed_solomon_streamTest.cpp
 )
 
@@ -29,5 +30,6 @@ target_link_libraries(encoder_test
 	correct
 	wirehair
 	${OPENCV_LIBS}
+	${CPPFILESYSTEM}
 )
 
