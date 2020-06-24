@@ -1,5 +1,4 @@
 #include "MultiThreadedDecoder.h"
-#include "Processing.h"
 #include "cimb_translator/CimbDecoder.h"
 #include "cimb_translator/CimbReader.h"
 #include "encoder/Decoder.h"
@@ -24,10 +23,7 @@ namespace {
 	std::shared_ptr<MultiThreadedDecoder> _proc;
 
 	unsigned _calls = 0;
-	//unsigned _successfulScans = 0;
 	unsigned long long _undistortTicks = 0;
-	//unsigned long long _scanTicks = 0;
-	//unsigned long long _extractTicks = 0;
 
 	std::string _lastReport;
 	unsigned long long _ignoreUntilFrame = 0;
@@ -71,28 +67,7 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 
 	_proc->add(mat.clone());
 
-	/*
-	Scanner scanner(mat);
-	std::vector<Anchor> anchors = scanner.scan();
-	if (anchors.size() >= 4)
-	{
-		++_successfulScans;
-		_scanTicks += (clock() - begin);
-
-		Corners corners(anchors);
-		Deskewer de;
-		cv::Mat img = de.deskew(mat, corners);
-		_extractTicks += (clock() - begin);
-
-		cv::rotate(img, img, cv::ROTATE_90_CLOCKWISE);
-		cv::cvtColor(img, img, COLOR_RGB2BGR); // opencv JavaCameraView shenanigans defeated?
-
-		// if extracted image is small, we'll need to run some filters on it
-		bool shouldPreprocess = !corners.is_granular_scale(de.total_size());
-		_proc->add(img, shouldPreprocess);
-	}*/
-
-	/*if (_calls % 10 == 0 and anchors.size() == 4)
+	/*if (_calls % 10 == 0) // and anchors.size() == 4)
 	{
 		std::stringstream fname;
 		fname << dataPath << "/myimage" << _calls << ".png";
