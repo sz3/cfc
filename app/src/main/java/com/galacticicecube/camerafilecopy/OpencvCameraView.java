@@ -13,6 +13,7 @@ import android.util.Log;
 import android.view.ViewGroup.LayoutParams;
 
 import org.opencv.BuildConfig;
+import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Size;
@@ -27,7 +28,7 @@ import org.opencv.imgproc.Imgproc;
  * When frame is delivered via callback from Camera - it processed via OpenCV to be
  * converted to RGBA32 and then passed to the external callback for modifications if required.
  */
-public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallback {
+public class OpencvCameraView extends CameraBridgeViewBase implements PreviewCallback {
 
     private static final int MAGIC_TEXTURE_ID = 10;
     private static final String TAG = "JavaCameraView";
@@ -58,11 +59,11 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
         }
     }
 
-    public JavaCameraView(Context context, int cameraId) {
+    public OpencvCameraView(Context context, int cameraId) {
         super(context, cameraId);
     }
 
-    public JavaCameraView(Context context, AttributeSet attrs) {
+    public OpencvCameraView(Context context, AttributeSet attrs) {
         super(context, attrs);
     }
 
@@ -172,6 +173,7 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                     {
                         params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
                     }
+                    //params.setPreviewFpsRange(30000,30000);
 
                     mCamera.setParameters(params);
                     params = mCamera.getParameters();
@@ -352,10 +354,10 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
         public void run() {
             do {
                 boolean hasFrame = false;
-                synchronized (JavaCameraView.this) {
+                synchronized (OpencvCameraView.this) {
                     try {
                         while (!mCameraFrameReady && !mStopThread) {
-                            JavaCameraView.this.wait();
+                            OpencvCameraView.this.wait();
                         }
                     } catch (InterruptedException e) {
                         e.printStackTrace();
