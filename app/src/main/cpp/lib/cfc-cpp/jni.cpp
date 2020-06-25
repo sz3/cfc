@@ -27,11 +27,13 @@ namespace {
 
 	std::string _lastReport;
 	unsigned long long _ignoreUntilFrame = 0;
+	unsigned long long _lastPerfect = 0;
 	unsigned long long _lastDecodedBytes = 0;
 	unsigned long long _lastDecodedFrames = 0;
 
 	void updateUndistortTracker(const MultiThreadedDecoder& decoder)
 	{
+		_lastPerfect = decoder.perfect;
 		_lastDecodedBytes = decoder.bytes;
 		_lastDecodedFrames = decoder.decoded;
 	}
@@ -90,7 +92,7 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 		if (frames != 0)
 		{
 			unsigned long long perFrame = (currentBytes - _lastDecodedBytes) / frames;
-			if (perFrame < 4000)
+			if (perFrame < 4000 and _proc->perfect == _lastPerfect)
 				_und->reset_distortion_params();
 
 			std::stringstream rep;
@@ -105,15 +107,17 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 	std::stringstream sstop;
 	sstop << "MTD says: " << _proc->num_threads() << " thread(s), " << MultiThreadedDecoder::bytes << _lastReport;
 	std::stringstream ssmid;
-	ssmid << "#: " << MultiThreadedDecoder::decoded << " / " << MultiThreadedDecoder::scanned << " / " << _calls;
-	ssmid << ". undistort: " << (_undistortTicks/no0(_calls)) << ", extract: " << (MultiThreadedDecoder::extractTicks / no0(MultiThreadedDecoder::decoded));
-	ssmid << ", decode: " << (MultiThreadedDecoder::decodeTicks / no0(MultiThreadedDecoder::decoded));
+	ssmid << "#: " << MultiThreadedDecoder::perfect << " / " << MultiThreadedDecoder::decoded << " / " << MultiThreadedDecoder::scanned << " / " << _calls;
+	std::stringstream ssperf;
+	ssperf << "undistort: " << (_undistortTicks/no0(_calls)) << ", extract: " << (MultiThreadedDecoder::extractTicks / no0(MultiThreadedDecoder::decoded));
+	ssperf << ", decode: " << (MultiThreadedDecoder::decodeTicks / no0(MultiThreadedDecoder::decoded));
 	std::stringstream ssbot;
 	ssbot << "Files received: " << _proc->files_decoded() << ", in flight: " << _proc->files_in_flight();
 
 	cv::putText(mat, sstop.str(), cv::Point(5,50), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 	cv::putText(mat, ssmid.str(), cv::Point(5,100), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
-	cv::putText(mat, ssbot.str(), cv::Point(5,150), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
+	cv::putText(mat, ssperf.str(), cv::Point(5,150), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
+	cv::putText(mat, ssbot.str(), cv::Point(5,200), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 
 	/*for (const Anchor& anchor : anchors)
 		cv::rectangle(mat, cv::Point(anchor.x(), anchor.y()), cv::Point(anchor.xmax(), anchor.ymax()), cv::Scalar(255,20,20), 10);*/

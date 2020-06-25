@@ -13,6 +13,7 @@ public:
 	MultiThreadedDecoder(std::string data_path);
 
 	inline static clock_t bytes = 0;
+	inline static clock_t perfect = 0;
 	inline static clock_t decoded = 0;
 	inline static clock_t decodeTicks = 0;
 	inline static clock_t scanned = 0;
@@ -34,6 +35,7 @@ protected:
 	unsigned _numThreads;
 	turbo::thread_pool _pool;
 	concurrent_fountain_decoder_sink<626> _writer;
+	std::string _dataPath;
 };
 
 inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path)
@@ -41,6 +43,7 @@ inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path)
 	, _numThreads(std::max<int>(((int)std::thread::hardware_concurrency())-1, 1))
 	, _pool(_numThreads, 1)
 	, _writer(data_path)
+	, _dataPath(data_path)
 {
 	FountainInit::init();
 	_pool.start();
@@ -65,9 +68,13 @@ inline bool MultiThreadedDecoder::add(cv::Mat mat)
 		// if extracted image is small, we'll need to run some filters on it
 		begin = clock();
 		bool should_preprocess = (res == Extractor::NEEDS_SHARPEN);
-		bytes += _dec.decode_fountain(img, _writer, should_preprocess);
+		unsigned decodeRes = _dec.decode_fountain(img, _writer, should_preprocess);
+		bytes += decodeRes;
 		++decoded;
 		decodeTicks += clock() - begin;
+
+		if (decodeRes >= 6900)
+			++perfect;
 	} );
 }
 
