@@ -27,22 +27,20 @@ namespace {
 
 	std::string _lastReport;
 	unsigned long long _ignoreUntilFrame = 0;
-	unsigned long long _lastPerfect = 0;
 	unsigned long long _lastDecodedBytes = 0;
 	unsigned long long _lastDecodedFrames = 0;
 
 	void updateUndistortTracker(const MultiThreadedDecoder& decoder)
 	{
-		_lastPerfect = decoder.perfect;
 		_lastDecodedBytes = decoder.bytes;
 		_lastDecodedFrames = decoder.decoded;
 	}
 
-	unsigned no0(unsigned num)
+	unsigned millis(unsigned num, unsigned denom)
 	{
-		if (!num)
-			return 1;
-		return num;
+		if (!denom)
+			denom = 1;
+		return (num / denom) * 1000 / CLOCKS_PER_SEC;
 	}
 }
 
@@ -63,10 +61,10 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 	if (!_und)
 		_und = std::make_shared< Undistort<SimpleCameraCalibration> >();
 
-	// could move undistort after the first scanner check... we'll see
-	cv::Mat img = mat.clone();
-	_und->undistort(img, img);
-	_undistortTicks += (clock() - begin);
+	// undistort neeeds to be on the bg thread?
+	cv::Mat img = mat.clone(); // should we be reusing Mat buffers?
+	//_und->undistort(img, img);
+	//_undistortTicks += (clock() - begin);
 
 	_proc->add(img);
 
@@ -77,7 +75,7 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 		_proc->save(fname.str(), img);
 	}*/
 
-	unsigned scanFrame = _proc->scanned;
+	/*unsigned scanFrame = _proc->scanned;
 	if (scanFrame == _ignoreUntilFrame)
 		updateUndistortTracker(*_proc);
 
@@ -92,7 +90,7 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 		if (frames != 0)
 		{
 			unsigned long long perFrame = (currentBytes - _lastDecodedBytes) / frames;
-			if (perFrame < 4000 and _proc->perfect == _lastPerfect)
+			if (perFrame < 2000)
 				_und->reset_distortion_params();
 
 			std::stringstream rep;
@@ -102,15 +100,16 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 
 		_ignoreUntilFrame = _proc->scanned + _proc->backlog();
 		updateUndistortTracker(*_proc);
-	}
+	}*/
 
 	std::stringstream sstop;
-	sstop << "MTD says: " << _proc->num_threads() << " thread(s), " << MultiThreadedDecoder::bytes << _lastReport;
+	sstop << "MTD says: " << _proc->num_threads() << " thread(s). " << MultiThreadedDecoder::bytes << _lastReport;
 	std::stringstream ssmid;
 	ssmid << "#: " << MultiThreadedDecoder::perfect << " / " << MultiThreadedDecoder::decoded << " / " << MultiThreadedDecoder::scanned << " / " << _calls;
 	std::stringstream ssperf;
-	ssperf << "undistort: " << (_undistortTicks/no0(_calls)) << ", extract: " << (MultiThreadedDecoder::extractTicks / no0(MultiThreadedDecoder::decoded));
-	ssperf << ", decode: " << (MultiThreadedDecoder::decodeTicks / no0(MultiThreadedDecoder::decoded));
+	ssperf << "undistort: " << millis(_undistortTicks, _calls) << ", scan: " << millis(MultiThreadedDecoder::scanTicks, MultiThreadedDecoder::scanned);
+	ssperf << ", extract: " << millis(MultiThreadedDecoder::extractTicks, MultiThreadedDecoder::decoded);
+	ssperf << ", decode: " << millis(MultiThreadedDecoder::decodeTicks, MultiThreadedDecoder::decoded);
 	std::stringstream ssbot;
 	ssbot << "Files received: " << _proc->files_decoded() << ", in flight: " << _proc->files_in_flight();
 
