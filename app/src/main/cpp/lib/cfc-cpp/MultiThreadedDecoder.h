@@ -68,15 +68,17 @@ inline int MultiThreadedDecoder::do_extract(const cv::Mat& mat, cv::Mat& img)
 		return Extractor::FAILURE;
 
 	begin = clock();
-	Corners corners(anchors);
+	// for now, hard rotate here. target is: top_left, top_right, bottom_left, bottom_right
+	// we want 90 degrees clockwise, so:
+	// 0 is top right, 1 is bottom right, 2 is top left, 3 is bottom left
+	Corners corners(anchors[2].center(), anchors[0].center(), anchors[3].center(), anchors[1].center());
 	Deskewer de;
 	img = de.deskew(mat, corners);
+
+	cv::cvtColor(img, img, cv::COLOR_RGB2BGR); // opencv JavaCameraView shenanigans defeated?
 	extractTicks += (clock() - begin);
 
-	cv::rotate(img, img, cv::ROTATE_90_CLOCKWISE);
-	cv::cvtColor(img, img, cv::COLOR_RGB2BGR); // opencv JavaCameraView shenanigans defeated?
-
-	return !corners.is_granular_scale(de.total_size());
+	return corners.is_granular_scale(de.total_size())? Extractor::SUCCESS : Extractor::NEEDS_SHARPEN;
 }
 
 inline bool MultiThreadedDecoder::add(cv::Mat mat)
