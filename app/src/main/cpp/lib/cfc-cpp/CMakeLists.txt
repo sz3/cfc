@@ -4,7 +4,8 @@ add_library(cfc-cpp
         SHARED
 
         jni.cpp
-        Processing.h
+        concurrent_fountain_decoder_sink.h
+        MultiThreadedDecoder.h
 )
 
 find_library(log-lib
