@@ -46,7 +46,7 @@ protected:
 
 inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path)
 	: _dec(64)
-	, _numThreads(std::max<int>(((int)std::thread::hardware_concurrency()/2), 1))
+	, _numThreads(4) //std::max<int>(((int)std::thread::hardware_concurrency()/2), 1))
 	, _pool(_numThreads, 1)
 	, _writer(data_path)
 	, _dataPath(data_path)
@@ -75,10 +75,10 @@ inline int MultiThreadedDecoder::do_extract(const cv::Mat& mat, cv::Mat& img)
 	Deskewer de;
 	img = de.deskew(mat, corners);
 
-	cv::cvtColor(img, img, cv::COLOR_RGB2BGR); // opencv JavaCameraView shenanigans defeated?
+	//cv::cvtColor(img, img, cv::COLOR_RGB2BGR); // opencv JavaCameraView shenanigans defeated?
 	extractTicks += (clock() - begin);
 
-	return corners.is_granular_scale(de.total_size())? Extractor::SUCCESS : Extractor::NEEDS_SHARPEN;
+	return Extractor::SUCCESS;
 }
 
 inline bool MultiThreadedDecoder::add(cv::Mat mat)
@@ -99,6 +99,12 @@ inline bool MultiThreadedDecoder::add(cv::Mat mat)
 
 		if (decodeRes >= 5400)
 			++perfect;
+		/*else
+		{
+			std::stringstream fname;
+			fname << _dataPath << "/scan" << (scanned-1) << ".png";
+			//cv::imwrite(fname.str(), mat);
+		}*/
 	} );
 }
 
