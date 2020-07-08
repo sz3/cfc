@@ -3,12 +3,11 @@
 #include "cimb_translator/CimbReader.h"
 #include "encoder/Decoder.h"
 #include "extractor/Scanner.h"
-#include "extractor/SimpleCameraCalibration.h"
-#include "extractor/Undistort.h"
 
 #include <jni.h>
 #include <android/log.h>
 #include <opencv2/core/core.hpp>
+#include <opencv2/core/ocl.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <memory>
 #include <sstream>
@@ -19,22 +18,10 @@ using namespace std;
 using namespace cv;
 
 namespace {
-	std::shared_ptr<Undistort<SimpleCameraCalibration>> _und;
 	std::shared_ptr<MultiThreadedDecoder> _proc;
 
 	unsigned _calls = 0;
-	unsigned long long _undistortTicks = 0;
-
 	std::string _lastReport;
-	unsigned long long _ignoreUntilFrame = 0;
-	unsigned long long _lastDecodedBytes = 0;
-	unsigned long long _lastDecodedFrames = 0;
-
-	void updateUndistortTracker(const MultiThreadedDecoder& decoder)
-	{
-		_lastDecodedBytes = decoder.bytes;
-		_lastDecodedFrames = decoder.decoded;
-	}
 
 	unsigned millis(unsigned num, unsigned denom)
 	{
@@ -58,11 +45,9 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 
 	if (!_proc)
 		_proc = std::make_shared<MultiThreadedDecoder>(dataPath);
-	if (!_und)
-		_und = std::make_shared< Undistort<SimpleCameraCalibration> >();
 
 	// undistort neeeds to be on the bg thread?
-	cv::Mat img = mat.clone(); // should we be reusing Mat buffers?
+	cv::Mat img = mat.clone();
 	//_und->undistort(img, img);
 	//_undistortTicks += (clock() - begin);
 
@@ -75,39 +60,28 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 		_proc->save(fname.str(), img);
 	}*/
 
-	/*unsigned scanFrame = _proc->scanned;
-	if (scanFrame == _ignoreUntilFrame)
-		updateUndistortTracker(*_proc);
-
-	if (_calls % 60 == 0)
+	if (_lastReport.empty())
 	{
-		// check MultiThreadedDecoder metrics, only reset if we're failing a lot
-		// for the first pass, use bytes / decoded, and checkpoint???
-		unsigned long long currentBytes = _proc->bytes;
-		unsigned long long currentDec = _proc->decoded;
-
-		unsigned long long frames = currentDec - _lastDecodedFrames;
-		if (frames != 0)
+		std::stringstream ss;
+		cv::ocl::Context context;
+		if (context.create(cv::ocl::Device::TYPE_ALL))
 		{
-			unsigned long long perFrame = (currentBytes - _lastDecodedBytes) / frames;
-			if (perFrame < 2000)
-				_und->reset_distortion_params();
+			ss << "" << context.ndevices();
+			for (int i = 0; i < context.ndevices(); i++)
+				ss << ":" << context.device(i).name();
 
-			std::stringstream rep;
-			rep << ", Per frame: " << perFrame;
-			_lastReport = rep.str();
+			_lastReport = ss.str();
 		}
-
-		_ignoreUntilFrame = _proc->scanned + _proc->backlog();
-		updateUndistortTracker(*_proc);
-	}*/
+		else
+			_lastReport = "fals";
+	}
 
 	std::stringstream sstop;
-	sstop << "MTD says: " << _proc->num_threads() << " thread(s). " << MultiThreadedDecoder::bytes << _lastReport;
+	sstop << "MTD says: " << _proc->num_threads() << " thread(s). " << cv::ocl::haveOpenCL() << "-" << cv::ocl::useOpenCL() << "? " << MultiThreadedDecoder::bytes << "! " << _lastReport;
 	std::stringstream ssmid;
 	ssmid << "#: " << MultiThreadedDecoder::perfect << " / " << MultiThreadedDecoder::decoded << " / " << MultiThreadedDecoder::scanned << " / " << _calls;
 	std::stringstream ssperf;
-	ssperf << "undistort: " << millis(_undistortTicks, _calls) << ", scan: " << millis(MultiThreadedDecoder::scanTicks, MultiThreadedDecoder::scanned);
+	ssperf << "scan: " << millis(MultiThreadedDecoder::scanTicks, MultiThreadedDecoder::scanned);
 	ssperf << ", extract: " << millis(MultiThreadedDecoder::extractTicks, MultiThreadedDecoder::decoded);
 	ssperf << ", decode: " << millis(MultiThreadedDecoder::decodeTicks, MultiThreadedDecoder::decoded);
 	std::stringstream ssbot;
@@ -117,6 +91,7 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 	cv::putText(mat, ssmid.str(), cv::Point(5,100), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 	cv::putText(mat, ssperf.str(), cv::Point(5,150), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 	cv::putText(mat, ssbot.str(), cv::Point(5,200), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
+	//*/
 
 	/*for (const Anchor& anchor : anchors)
 		cv::rectangle(mat, cv::Point(anchor.x(), anchor.y()), cv::Point(anchor.xmax(), anchor.ymax()), cv::Scalar(255,20,20), 10);*/
