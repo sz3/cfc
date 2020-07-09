@@ -84,6 +84,7 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 	ssperf << "scan: " << millis(MultiThreadedDecoder::scanTicks, MultiThreadedDecoder::scanned);
 	ssperf << ", extract: " << millis(MultiThreadedDecoder::extractTicks, MultiThreadedDecoder::decoded);
 	ssperf << ", decode: " << millis(MultiThreadedDecoder::decodeTicks, MultiThreadedDecoder::decoded);
+	ssperf << ", gput: " << millis(MultiThreadedDecoder::gpuTicks, MultiThreadedDecoder::decoded);
 	std::stringstream ssbot;
 	ssbot << "Files received: " << _proc->files_decoded() << ", in flight: " << _proc->files_in_flight();
 

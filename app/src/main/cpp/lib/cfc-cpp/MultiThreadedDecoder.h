@@ -22,10 +22,11 @@ public:
 	inline static clock_t scanned = 0;
 	inline static clock_t scanTicks = 0;
 	inline static clock_t extractTicks = 0;
+	inline static clock_t gpuTicks = 0;
 
 	bool add(cv::Mat mat);
-	bool decode(const cv::UMat& img, bool should_preprocess);
-	bool save(std::string path, const cv::UMat& img);
+	bool decode(const cv::Mat& img, bool should_preprocess);
+	bool save(std::string path, const cv::Mat& img);
 
 	void stop();
 
@@ -46,7 +47,7 @@ protected:
 
 inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path)
 	: _dec(64)
-	, _numThreads(4) //std::max<int>(((int)std::thread::hardware_concurrency()/2), 1))
+	, _numThreads(std::max<int>(((int)std::thread::hardware_concurrency()), 1))
 	, _pool(_numThreads, 1)
 	, _writer(data_path)
 	, _dataPath(data_path)
@@ -89,10 +90,14 @@ inline bool MultiThreadedDecoder::add(cv::Mat mat)
 		if (res == Extractor::FAILURE)
 			return;
 
-		// if extracted image is small, we'll need to run some filters on it
 		clock_t begin = clock();
+		cv::Mat temp = img.getMat(cv::ACCESS_FAST);
+		gpuTicks += clock() - begin;
+
+		// if extracted image is small, we'll need to run some filters on it
+		begin = clock();
 		bool should_preprocess = (res == Extractor::NEEDS_SHARPEN);
-		unsigned decodeRes = _dec.decode_fountain(img, _writer, should_preprocess);
+		unsigned decodeRes = _dec.decode_fountain(temp, _writer, should_preprocess);
 		bytes += decodeRes;
 		++decoded;
 		decodeTicks += clock() - begin;
@@ -108,7 +113,7 @@ inline bool MultiThreadedDecoder::add(cv::Mat mat)
 	} );
 }
 
-inline bool MultiThreadedDecoder::decode(const cv::UMat& img, bool should_preprocess)
+inline bool MultiThreadedDecoder::decode(const cv::Mat& img, bool should_preprocess)
 {
 	return _pool.try_execute( [&, img, should_preprocess] () {
 		clock_t begin = clock();
@@ -118,7 +123,7 @@ inline bool MultiThreadedDecoder::decode(const cv::UMat& img, bool should_prepro
 	} );
 }
 
-inline bool MultiThreadedDecoder::save(std::string path, const cv::UMat& img)
+inline bool MultiThreadedDecoder::save(std::string path, const cv::Mat& img)
 {
 	return _pool.try_execute( [&, img, path] () {
 		cv::imwrite(path, img);
