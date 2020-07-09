@@ -24,12 +24,12 @@ public:
 	inline static clock_t extractTicks = 0;
 
 	bool add(cv::Mat mat);
-	bool decode(const cv::Mat& img, bool should_preprocess);
-	bool save(std::string path, const cv::Mat& img);
+	bool decode(const cv::UMat& img, bool should_preprocess);
+	bool save(std::string path, const cv::UMat& img);
 
 	void stop();
 
-	int do_extract(const cv::Mat& mat, cv::Mat& img);
+	int do_extract(const cv::UMat& mat, cv::UMat& img);
 
 	unsigned num_threads() const;
 	unsigned backlog() const;
@@ -55,7 +55,7 @@ inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path)
 	_pool.start();
 }
 
-inline int MultiThreadedDecoder::do_extract(const cv::Mat& mat, cv::Mat& img)
+inline int MultiThreadedDecoder::do_extract(const cv::UMat& mat, cv::UMat& img)
 {
 	clock_t begin = clock();
 
@@ -78,14 +78,14 @@ inline int MultiThreadedDecoder::do_extract(const cv::Mat& mat, cv::Mat& img)
 	//cv::cvtColor(img, img, cv::COLOR_RGB2BGR); // opencv JavaCameraView shenanigans defeated?
 	extractTicks += (clock() - begin);
 
-	return Extractor::SUCCESS;
+	return Extractor::SUCCESS; //corners.is_granular_scale(de.total_size())? Extractor::SUCCESS : Extractor::NEEDS_SHARPEN;
 }
 
 inline bool MultiThreadedDecoder::add(cv::Mat mat)
 {
 	return _pool.try_execute( [&, mat] () {
-		cv::Mat img;
-		int res = do_extract(mat, img);
+		cv::UMat img = mat.getUMat(cv::ACCESS_FAST);
+		int res = do_extract(img, img);
 		if (res == Extractor::FAILURE)
 			return;
 
@@ -108,7 +108,7 @@ inline bool MultiThreadedDecoder::add(cv::Mat mat)
 	} );
 }
 
-inline bool MultiThreadedDecoder::decode(const cv::Mat& img, bool should_preprocess)
+inline bool MultiThreadedDecoder::decode(const cv::UMat& img, bool should_preprocess)
 {
 	return _pool.try_execute( [&, img, should_preprocess] () {
 		clock_t begin = clock();
@@ -118,7 +118,7 @@ inline bool MultiThreadedDecoder::decode(const cv::Mat& img, bool should_preproc
 	} );
 }
 
-inline bool MultiThreadedDecoder::save(std::string path, const cv::Mat& img)
+inline bool MultiThreadedDecoder::save(std::string path, const cv::UMat& img)
 {
 	return _pool.try_execute( [&, img, path] () {
 		cv::imwrite(path, img);
