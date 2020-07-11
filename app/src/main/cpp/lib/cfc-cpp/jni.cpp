@@ -29,6 +29,13 @@ namespace {
 			denom = 1;
 		return (num / denom) * 1000 / CLOCKS_PER_SEC;
 	}
+
+	unsigned percent(unsigned num, unsigned denom)
+	{
+		if (!denom)
+			denom = 1;
+		return (num * 100) / denom;
+	}
 }
 
 extern "C" {
@@ -84,13 +91,14 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 	ssperf << "scan: " << millis(MultiThreadedDecoder::scanTicks, MultiThreadedDecoder::scanned);
 	ssperf << ", extract: " << millis(MultiThreadedDecoder::extractTicks, MultiThreadedDecoder::decoded);
 	ssperf << ", decode: " << millis(MultiThreadedDecoder::decodeTicks, MultiThreadedDecoder::decoded);
-	std::stringstream ssbot;
-	ssbot << "Files received: " << _proc->files_decoded() << ", in flight: " << _proc->files_in_flight();
+	std::stringstream sstats;
+	sstats << "Files received: " << _proc->files_decoded() << ", in flight: " << _proc->files_in_flight();
+	sstats << ". %s: " << percent(MultiThreadedDecoder::perfect, MultiThreadedDecoder::decoded) << "% : " << percent(MultiThreadedDecoder::decoded, MultiThreadedDecoder::scanned);
 
 	cv::putText(mat, sstop.str(), cv::Point(5,50), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 	cv::putText(mat, ssmid.str(), cv::Point(5,100), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 	cv::putText(mat, ssperf.str(), cv::Point(5,150), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
-	cv::putText(mat, ssbot.str(), cv::Point(5,200), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
+	cv::putText(mat, sstats.str(), cv::Point(5,200), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 	//*/
 
 	/*for (const Anchor& anchor : anchors)

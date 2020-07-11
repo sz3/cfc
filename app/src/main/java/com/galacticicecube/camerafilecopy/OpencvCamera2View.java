@@ -215,11 +215,11 @@ public class OpencvCamera2View extends CameraBridgeViewBase {
                             mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AWB_MODE,
                                     CaptureRequest.CONTROL_AWB_MODE_OFF);
                             mPreviewRequestBuilder.set(CaptureRequest.SENSOR_SENSITIVITY,
-                                    100);
+                                    400);
                             mPreviewRequestBuilder.set(CaptureRequest.SENSOR_FRAME_DURATION,
                                     16666666L);
                             mPreviewRequestBuilder.set(CaptureRequest.SENSOR_EXPOSURE_TIME,
-                                    20400000L);
+                                    16666666L);
 
                             mCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(), null, mBackgroundHandler);
                             Log.i(LOGTAG, "CameraPreviewSession has been started");
@@ -375,10 +375,10 @@ public class OpencvCamera2View extends CameraBridgeViewBase {
                 long addr_diff = uv_mat2.dataAddr() - uv_mat1.dataAddr();
                 if (addr_diff > 0) {
                     assert(addr_diff == 1);
-                    Imgproc.cvtColorTwoPlane(y_mat, uv_mat1, mRgba, Imgproc.COLOR_YUV2RGBA_NV12);
+                    Imgproc.cvtColorTwoPlane(y_mat, uv_mat1, mRgba, Imgproc.COLOR_YUV2BGRA_NV12);
                 } else {
                     assert(addr_diff == -1);
-                    Imgproc.cvtColorTwoPlane(y_mat, uv_mat2, mRgba, Imgproc.COLOR_YUV2RGBA_NV21);
+                    Imgproc.cvtColorTwoPlane(y_mat, uv_mat2, mRgba, Imgproc.COLOR_YUV2BGRA_NV21);
                 }
                 return mRgba;
             } else { // Chroma channels are not interleaved
