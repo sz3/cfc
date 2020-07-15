@@ -15,53 +15,11 @@ namespace {
 			return an1.size() > an2.size();
 		}
 	};
-
-	unsigned nextPowerOfTwoPlusOne(unsigned v)
-	{
-		// get next power of 2 + 1
-		// min 3
-		v--;
-		v |= v >> 1;
-		v |= v >> 2;
-		v |= v >> 4;
-		v |= v >> 8;
-		v |= v >> 16;
-		return std::max(3U, v + 2);
-	}
-}
-
-Scanner::Scanner(const cv::Mat& img, bool dark, int skip)
-    : _dark(dark)
-    , _skip(skip)
-    , _mergeCutoff(img.cols / 30)
-    , _anchorSize(30)
-{
-	_img = preprocess_image(img);
 }
 
 int Scanner::anchor_size() const
 {
 	return _anchorSize;
-}
-
-cv::Mat Scanner::preprocess_image(const cv::Mat& img)
-{
-	unsigned unitX = nextPowerOfTwoPlusOne((unsigned)(img.cols * 0.002));
-	unsigned unitY = nextPowerOfTwoPlusOne((unsigned)(img.rows * 0.002));
-
-	cv::Mat out;
-	if (img.channels() >= 3)
-		cv::cvtColor(img, out, cv::COLOR_BGR2GRAY);
-	else
-		out = img;
-
-	cv::GaussianBlur(out, out, cv::Size(unitY, unitX), 0);
-
-	cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(4.0, cv::Size(100, 100));
-	clahe->apply(out, out);
-
-	cv::threshold(out, out, 127, 255, cv::THRESH_BINARY);
-	return out;
 }
 
 bool Scanner::test_pixel(int x, int y) const
@@ -81,7 +39,7 @@ std::vector<Anchor> Scanner::deduplicate_candidates(const std::vector<Anchor>& c
 		bool foundMerge = false;
 		for (Anchor& m : merged)
 		{
-			if (m.within_merge_distance(c, _mergeCutoff))
+			if (m.is_mergeable(c, _mergeCutoff))
 			{
 				foundMerge = true;
 				m.merge(c);
@@ -110,6 +68,8 @@ void Scanner::filter_candidates(std::vector<Anchor>& candidates) const
 	for (; i < candidates.size(); ++i)
 		if (candidates[i].size() < cutoff)
 			break;
+	if (i > 4)
+		i = 4;
 	if (i < candidates.size())
 		candidates.resize(i);
 }
@@ -159,7 +119,7 @@ bool Scanner::scan_vertical(std::vector<Anchor>& points, int x, int xmax, int ys
 		bool active = test_pixel(xavg, y);
 		int res = state.process(active);
 		if (res > 0)
-			points.push_back(Anchor(x, xmax, y-res, y-1));
+			points.push_back(Anchor(xavg, xavg, y-res, y-1));
 	}
 
 	// if the pattern is at the edge of the range
@@ -172,7 +132,7 @@ bool Scanner::scan_vertical(std::vector<Anchor>& points, int x, int xmax, int ys
 	return initCount != points.size();
 }
 
-void Scanner::scan_diagonal(std::vector<Anchor>& points, int xstart, int xend, int ystart, int yend) const
+bool Scanner::scan_diagonal(std::vector<Anchor>& points, int xstart, int xend, int ystart, int yend) const
 {
 	xend = std::min(xend, _img.cols);
 	yend = std::min(yend, _img.rows);
@@ -192,6 +152,7 @@ void Scanner::scan_diagonal(std::vector<Anchor>& points, int xstart, int xend, i
 	}
 
 	// do the scan
+	unsigned initCount = points.size();
 	ScanState state;
 	int x = xstart, y = ystart;
 	for (; x < xend and y < yend; ++x, ++y)
@@ -199,13 +160,15 @@ void Scanner::scan_diagonal(std::vector<Anchor>& points, int xstart, int xend, i
 		bool active = test_pixel(x, y);
 		int res = state.process(active);
 		if (res > 0)
-			points.push_back(Anchor(x-res, x, y-res, y));
+			points.push_back(Anchor(x-res, x-1, y-res, y-1));
 	}
 
 	// if the pattern is at the edge of the range
 	int res = state.process(false);
 	if (res > 0)
-		points.push_back(Anchor(x-res, x, y-res, y));
+		points.push_back(Anchor(x-res, x-1, y-res, y-1));
+
+	return initCount != points.size();
 }
 
 std::vector<Anchor> Scanner::t1_scan_rows() const
@@ -233,11 +196,21 @@ std::vector<Anchor> Scanner::t3_scan_diagonal(const std::vector<Anchor>& candida
 	std::vector<Anchor> points;
 	for (const Anchor& p : candidates)
 	{
+		std::vector<Anchor> confirms;
 		int xstart = p.xavg() - (2 * p.yrange());
 		int xend = p.xavg() + (2 * p.yrange());
 		int ystart = p.y() - p.yrange();
 		int yend = p.ymax() + p.yrange();
-		scan_diagonal(points, xstart, xend, ystart, yend);
+		if (!scan_diagonal(confirms, xstart, xend, ystart, yend))
+			continue;
+
+		Anchor merged(p);
+		for (const Anchor& co : confirms)
+		{
+			if (co.is_mergeable(p, _mergeCutoff))
+				merged.merge(co);
+		}
+		points.push_back(merged);
 	}
 	return points;
 }
@@ -264,7 +237,7 @@ std::vector<Anchor> Scanner::t4_confirm_scan(const std::vector<Anchor>& candidat
 		Anchor merged(p);
 		for (const Anchor& co : confirms)
 		{
-			if (co.within_merge_distance(p, _mergeCutoff))
+			if (co.is_mergeable(p, _mergeCutoff))
 				merged.merge(co);
 		}
 		points.push_back(merged);

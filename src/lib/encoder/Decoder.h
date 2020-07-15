@@ -15,11 +15,11 @@ class Decoder
 public:
 	Decoder(unsigned ecc_bytes=40, unsigned bits_per_op=0, bool interleave=true);
 
-	template <typename STREAM>
-	unsigned decode(const cv::Mat& img, STREAM& ostream, bool should_preprocess=false);
+	template <typename MAT, typename STREAM>
+	unsigned decode(const MAT& img, STREAM& ostream, bool should_preprocess=false);
 
-	template <typename STREAM>
-	unsigned decode_fountain(const cv::Mat& img, STREAM& ostream, bool should_preprocess=false);
+	template <typename MAT, typename STREAM>
+	unsigned decode_fountain(const MAT& img, STREAM& ostream, bool should_preprocess=false);
 
 	unsigned decode(std::string filename, std::string output);
 
@@ -38,7 +38,7 @@ inline Decoder::Decoder(unsigned ecc_bytes, unsigned bits_per_op, bool interleav
     : _eccBytes(ecc_bytes)
     , _bitsPerOp(bits_per_op? bits_per_op : cimbar::Config::bits_per_cell())
     , _interleaveBlocks(interleave? cimbar::Config::interleave_blocks() : 0)
-    , _decoder(cimbar::Config::symbol_bits(), cimbar::Config::color_bits())
+    , _decoder(cimbar::Config::symbol_bits(), cimbar::Config::color_bits(), cimbar::Config::dark(), 0xFF)
 {
 }
 
@@ -58,13 +58,15 @@ template <typename STREAM>
 inline unsigned Decoder::do_decode(CimbReader& reader, STREAM& ostream)
 {
 	bitbuffer<> bb;
-	for (unsigned i : Interleave::interleave_reverse(reader.num_reads(), _interleaveBlocks))
+	std::vector<unsigned> interleaveLookup = Interleave::interleave_reverse(reader.num_reads(), _interleaveBlocks);
+	while (!reader.done())
 	{
-		if (reader.done())
-			break;
-		unsigned bits = reader.read();
-		unsigned index = i * _bitsPerOp;
-		bb.write(bits, index, _bitsPerOp);
+		// reader should probably be in charge of the cell index (i) calculation
+		// we can compute the bitindex ('index') here, but only the reader will know the right cell index...
+		unsigned bits = 0;
+		unsigned i = reader.read(bits);
+		unsigned bitPos = interleaveLookup[i] * _bitsPerOp;
+		bb.write(bits, bitPos, _bitsPerOp);
 	}
 
 	reed_solomon_stream rss(ostream, _eccBytes);
@@ -77,15 +79,15 @@ inline unsigned Decoder::do_decode(CimbReader& reader, STREAM& ostream)
 // then we'd direct the stringstream to our sink
 // which would either be a filestream, or a multi-channel fountain sink
 
-template <typename STREAM>
-inline unsigned Decoder::decode(const cv::Mat& img, STREAM& ostream, bool should_preprocess)
+template <typename MAT, typename STREAM>
+inline unsigned Decoder::decode(const MAT& img, STREAM& ostream, bool should_preprocess)
 {
 	CimbReader reader(img, _decoder, should_preprocess);
 	return do_decode(reader, ostream);
 }
 
-template <typename FOUNTAINSTREAM>
-inline unsigned Decoder::decode_fountain(const cv::Mat& img, FOUNTAINSTREAM& ostream, bool should_preprocess)
+template <typename MAT, typename FOUNTAINSTREAM>
+inline unsigned Decoder::decode_fountain(const MAT& img, FOUNTAINSTREAM& ostream, bool should_preprocess)
 {
 	CimbReader reader(img, _decoder, should_preprocess);
 
