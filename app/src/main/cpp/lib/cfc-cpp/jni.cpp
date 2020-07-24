@@ -21,7 +21,8 @@ namespace {
 	std::shared_ptr<MultiThreadedDecoder> _proc;
 
 	unsigned _calls = 0;
-	std::string _lastReport;
+	clock_t _fileTransferStart = 0;
+	clock_t _fileTransferTime = 0;
 
 	unsigned millis(unsigned num, unsigned denom)
 	{
@@ -60,31 +61,15 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 
 	_proc->add(img);
 
-	/*if (_calls % 10 == 0) // and anchors.size() == 4)
-	{
-		std::stringstream fname;
-		fname << dataPath << "/myimage" << _calls << ".png";
-		_proc->save(fname.str(), img);
-	}*/
+	if (_proc->files_in_flight() > 0 and _fileTransferStart == 0)
+		_fileTransferStart = clock();
+	if (_proc->files_decoded() > 0 and _fileTransferTime == 0)
+		_fileTransferTime = clock() - _fileTransferStart;
 
-	if (_lastReport.empty())
-	{
-		std::stringstream ss;
-		cv::ocl::Context context;
-		if (context.create(cv::ocl::Device::TYPE_ALL))
-		{
-			ss << "" << context.ndevices();
-			for (int i = 0; i < context.ndevices(); i++)
-				ss << ":" << context.device(i).name();
-
-			_lastReport = ss.str();
-		}
-		else
-			_lastReport = "fals";
-	}
 
 	std::stringstream sstop;
-	sstop << "MTD says: " << _proc->num_threads() << " thread(s). " << cv::ocl::haveOpenCL() << "-" << cv::ocl::useOpenCL() << "? " << MultiThreadedDecoder::bytes << "! " << _lastReport;
+	sstop << "MTD says: " << _proc->num_threads() << " thread(s). " << _proc->backlog() << "? " << cv::ocl::haveOpenCL() << "-" << cv::ocl::useOpenCL();
+	sstop << "? " << (MultiThreadedDecoder::bytes / std::max<double>(1, MultiThreadedDecoder::decoded)) << "b 2ecc30";
 	std::stringstream ssmid;
 	ssmid << "#: " << MultiThreadedDecoder::perfect << " / " << MultiThreadedDecoder::decoded << " / " << MultiThreadedDecoder::scanned << " / " << _calls;
 	std::stringstream ssperf;
@@ -94,11 +79,22 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 	std::stringstream sstats;
 	sstats << "Files received: " << _proc->files_decoded() << ", in flight: " << _proc->files_in_flight();
 	sstats << ". %s: " << percent(MultiThreadedDecoder::perfect, MultiThreadedDecoder::decoded) << "% : " << percent(MultiThreadedDecoder::decoded, MultiThreadedDecoder::scanned);
+	std::stringstream sstats2;
+	sstats2 << "File transfer time: " << millis(_fileTransferTime, 1000);
 
 	cv::putText(mat, sstop.str(), cv::Point(5,50), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 	cv::putText(mat, ssmid.str(), cv::Point(5,100), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 	cv::putText(mat, ssperf.str(), cv::Point(5,150), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 	cv::putText(mat, sstats.str(), cv::Point(5,200), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
+	cv::putText(mat, sstats2.str(), cv::Point(5,250), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
+
+	std::stringstream ssperf2;
+	ssperf2 << "reader ctor: " << millis(Decoder::readerInitTicks, MultiThreadedDecoder::decoded);
+	ssperf2 << ", fount: " << millis(Decoder::fountTicks, MultiThreadedDecoder::decoded);
+	ssperf2 << ", dodecode: " << millis(Decoder::decodeTicks, MultiThreadedDecoder::decoded);
+	ssperf2 << ", readloop: " << millis(Decoder::bbTicks, MultiThreadedDecoder::decoded);
+	ssperf2 << ", rss: " << millis(Decoder::rssTicks, MultiThreadedDecoder::decoded);
+	cv::putText(mat, ssperf2.str(), cv::Point(5,300), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 	//*/
 
 	/*for (const Anchor& anchor : anchors)
