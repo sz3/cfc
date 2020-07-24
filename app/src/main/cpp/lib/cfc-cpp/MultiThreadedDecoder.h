@@ -40,15 +40,15 @@ protected:
 	Decoder _dec;
 	unsigned _numThreads;
 	turbo::thread_pool _pool;
-	concurrent_fountain_decoder_sink<389> _writer;
+	concurrent_fountain_decoder_sink _writer;
 	std::string _dataPath;
 };
 
 inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path)
-	: _dec(64)
+	: _dec(cimbar::Config::ecc_bytes())
 	, _numThreads(4) //std::max<int>(((int)std::thread::hardware_concurrency()/2), 1))
 	, _pool(_numThreads, 1)
-	, _writer(data_path)
+	, _writer(data_path, cimbar::Config::fountain_chunk_size(cimbar::Config::ecc_bytes()))
 	, _dataPath(data_path)
 {
 	FountainInit::init();
@@ -97,7 +97,7 @@ inline bool MultiThreadedDecoder::add(cv::Mat mat)
 		++decoded;
 		decodeTicks += clock() - begin;
 
-		if (decodeRes >= 5400)
+		if (decodeRes >= 6900)
 			++perfect;
 		/*else
 		{

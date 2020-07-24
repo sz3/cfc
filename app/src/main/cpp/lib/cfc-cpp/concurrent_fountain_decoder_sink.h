@@ -1,27 +1,22 @@
 #pragma once
 
+#include "cimb_translator/Config.h"
 #include "fountain/fountain_decoder_sink.h"
 
 #include "concurrentqueue/concurrentqueue.h"
 #include <mutex>
 
-template <unsigned _bufferSize>
 class concurrent_fountain_decoder_sink
 {
 public:
-	concurrent_fountain_decoder_sink(std::string data_dir)
-		: _decoder(data_dir)
+	concurrent_fountain_decoder_sink(std::string data_dir, unsigned chunk_size)
+		: _decoder(data_dir, chunk_size)
 	{
 	}
 
 	unsigned chunk_size() const
 	{
 		return _decoder.chunk_size();
-	}
-
-	unsigned md_size() const
-	{
-		return _decoder.md_size();
 	}
 
 	unsigned num_streams() const
@@ -54,6 +49,6 @@ public:
 
 protected:
 	std::mutex _mutex;
-	fountain_decoder_sink<_bufferSize> _decoder;
+	fountain_decoder_sink _decoder;
 	moodycamel::ConcurrentQueue< std::string > _backlog;
 };
