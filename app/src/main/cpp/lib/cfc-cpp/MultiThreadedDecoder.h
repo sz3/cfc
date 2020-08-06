@@ -1,11 +1,11 @@
 #pragma once
 
-#include "concurrent_fountain_decoder_sink.h"
 #include "encoder/Decoder.h"
 #include "extractor/Anchor.h"
 #include "extractor/Deskewer.h"
 #include "extractor/Extractor.h"
 #include "extractor/Scanner.h"
+#include "fountain/concurrent_fountain_decoder_sink.h"
 
 #include "concurrent/thread_pool.h"
 #include <opencv2/opencv.hpp>
