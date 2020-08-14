@@ -27,21 +27,20 @@ TEST_CASE( "DecoderTest/testDecode", "[unit]" )
 
 	Decoder dec(0);
 	std::string decodedFile = tempdir.path() / "testDecode.txt";
-	unsigned bytesDecoded = dec.decode(TestCimbar::getSample("4color-ecc40-fountain-0.png"), decodedFile);
+	unsigned bytesDecoded = dec.decode(TestCimbar::getSample("6bit/4color_ecc30_fountain_0.png"), decodedFile);
 	assertEquals( 9300, bytesDecoded );
 
-	assertEquals( "56d1cc8c1564e22a63b9e64e686fc67a1f304c693f5513c1fb7f5618816031ba", get_hash(decodedFile) );
+	assertEquals( "7e1919b1210ccc332fc56e8b35cccd622d980f03c6c3b32338bb00aa4b6a22a2", get_hash(decodedFile) );
 }
-
 
 TEST_CASE( "DecoderTest/testDecodeEcc", "[unit]" )
 {
 	MakeTempDirectory tempdir;
 
-	Decoder dec(40);
+	Decoder dec(30);
 	std::string decodedFile = tempdir.path() / "testDecode.txt";
-	unsigned bytesDecoded = dec.decode(TestCimbar::getSample("4color-ecc40-fountain-0.png"), decodedFile);
-	assertEquals( 6900, bytesDecoded );
+	unsigned bytesDecoded = dec.decode(TestCimbar::getSample("6bit/4color_ecc30_fountain_0.png"), decodedFile);
+	assertEquals( 7500, bytesDecoded );
 
-	assertEquals( "f219b98c8bfaf7369975f7a4e0c95f580308438b6467290a0220b7bb28b807b4", get_hash(decodedFile) );
+	assertEquals( "382c76644a4dff475c5793c5fe061e35e47be252010d29aeaf8d93ee6a3f7045", get_hash(decodedFile) );
 }
