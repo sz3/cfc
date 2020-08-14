@@ -15,6 +15,12 @@ namespace {
 		return cimbar::load_img(fmt::format("bitmap/{}.png", name));
 	}
 
+	cv::Mat getSecondaryAnchor(bool dark)
+	{
+		string name = dark? "anchor-secondary-dark" : "anchor-secondary-light";
+		return cimbar::load_img(fmt::format("bitmap/{}.png", name));
+	}
+
 	cv::Mat getHorizontalGuide(bool dark)
 	{
 		string name = dark? "guide-horizontal-dark" : "guide-horizontal-light";
@@ -34,7 +40,7 @@ namespace {
 }
 
 CimbWriter::CimbWriter(bool dark, unsigned size)
-    : _positions(Config::cell_spacing(), Config::num_cells(), Config::cell_size(), Config::corner_padding(), Config::interleave_blocks())
+    : _positions(Config::cell_spacing(), Config::num_cells(), Config::cell_size(), Config::corner_padding(), Config::interleave_blocks(), Config::interleave_partitions())
     , _encoder(Config::symbol_bits(), Config::color_bits())
 {
 	cv::Scalar bgcolor = dark? cv::Scalar(0, 0, 0) : cv::Scalar(0xFF, 0xFF, 0xFF);
@@ -44,7 +50,9 @@ CimbWriter::CimbWriter(bool dark, unsigned size)
 	paste(_image, anchor, 0, 0);
 	paste(_image, anchor, 0, size - anchor.cols);
 	paste(_image, anchor, size - anchor.rows, 0);
-	paste(_image, anchor, size - anchor.rows, size - anchor.cols);
+
+	cv::Mat secondaryAnchor = getSecondaryAnchor(dark);
+	paste(_image, secondaryAnchor, size - anchor.rows, size - anchor.cols);
 
 	cv::Mat hg = getHorizontalGuide(dark);
 	paste(_image, hg, (size/2) - (hg.cols/2), 2);

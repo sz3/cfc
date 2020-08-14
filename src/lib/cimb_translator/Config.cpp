@@ -24,7 +24,7 @@ unsigned Config::bits_per_cell()
 
 unsigned Config::ecc_bytes()
 {
-	return 40;
+	return 30;
 }
 
 unsigned Config::image_size()
@@ -60,6 +60,27 @@ unsigned Config::corner_padding()
 unsigned Config::interleave_blocks()
 {
 	return 155;
+}
+
+unsigned Config::interleave_partitions()
+{
+	return 2;
+}
+
+unsigned Config::fountain_chunk_size(unsigned ecc)
+{
+	// this calculation is based off the 112x112-6 grid.
+	// in that grid, we have 155 * bits_per_cell * 10 total bytes of data.
+	// so this neatly splits into 10 chunks per frame.
+	// ex: 690=6900/10 for ecc=40.
+
+	// might double it to 5 per frame.
+	return (155-ecc) * bits_per_cell() * 10 / fountain_chunks_per_frame();
+}
+
+unsigned Config::fountain_chunks_per_frame()
+{
+	return 10;
 }
 
 }
