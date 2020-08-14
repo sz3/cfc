@@ -13,6 +13,13 @@
 class Decoder
 {
 public:
+	inline static clock_t readerInitTicks = 0;
+	inline static clock_t decodeTicks = 0;
+	inline static clock_t fountTicks = 0;
+	inline static clock_t bbTicks = 0;
+	inline static clock_t rssTicks = 0;
+
+public:
 	Decoder(unsigned ecc_bytes=40, unsigned bits_per_op=0, bool interleave=true);
 
 	template <typename MAT, typename STREAM>
@@ -59,6 +66,8 @@ inline Decoder::Decoder(unsigned ecc_bytes, unsigned bits_per_op, bool interleav
 template <typename STREAM>
 inline unsigned Decoder::do_decode(CimbReader& reader, STREAM& ostream)
 {
+	clock_t begin = clock();
+
 	bitbuffer bb(_bitsPerOp * 1550);
 	std::vector<unsigned> interleaveLookup = Interleave::interleave_reverse(reader.num_reads(), _interleaveBlocks, _interleavePartitions);
 	while (!reader.done())
@@ -71,8 +80,13 @@ inline unsigned Decoder::do_decode(CimbReader& reader, STREAM& ostream)
 		bb.write(bits, bitPos, _bitsPerOp);
 	}
 
+	bbTicks += clock() - begin;
+
+	begin = clock();
 	reed_solomon_stream rss(ostream, _eccBytes);
-	return bb.flush(rss);
+	unsigned res = bb.flush(rss);
+	rssTicks += clock() - begin;
+	return res;
 }
 
 // seems like we want to take a file or img, and have an output sink
@@ -91,10 +105,19 @@ inline unsigned Decoder::decode(const MAT& img, STREAM& ostream, bool should_pre
 template <typename MAT, typename FOUNTAINSTREAM>
 inline unsigned Decoder::decode_fountain(const MAT& img, FOUNTAINSTREAM& ostream, bool should_preprocess)
 {
+	clock_t begin = clock();
 	CimbReader reader(img, _decoder, should_preprocess);
+	readerInitTicks += clock() - begin;
 
-	aligned_stream aligner(ostream, ostream.chunk_size());
+	begin = clock();
+	std::stringstream buff;
+	aligned_stream aligner(buff, ostream.chunk_size());
 	unsigned res = do_decode(reader, aligner);
+	decodeTicks += clock() - begin;
+
+	begin = clock();
+	ostream << buff.str(); // make the buffer contiguous
+	fountTicks += clock() - begin;
 	return res;
 }
 
