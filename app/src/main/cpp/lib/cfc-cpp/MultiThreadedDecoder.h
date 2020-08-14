@@ -25,16 +25,17 @@ public:
 
 	bool add(cv::Mat mat);
 	bool decode(const cv::Mat& img, bool should_preprocess);
-	bool save(std::string path, const cv::Mat& img);
 
 	void stop();
-
-	int do_extract(const cv::Mat& mat, cv::Mat& img);
 
 	unsigned num_threads() const;
 	unsigned backlog() const;
 	unsigned files_in_flight() const;
 	unsigned files_decoded() const;
+
+protected:
+	int do_extract(const cv::Mat& mat, cv::Mat& img);
+	void save(const cv::Mat& img);
 
 protected:
 	Decoder _dec;
@@ -64,14 +65,13 @@ inline int MultiThreadedDecoder::do_extract(const cv::Mat& mat, cv::Mat& img)
 	++scanned;
 	scanTicks += (clock() - begin);
 
+	//if (anchors.size() >= 3) save(mat);
+
 	if (anchors.size() < 4)
 		return Extractor::FAILURE;
 
 	begin = clock();
-	// for now, hard rotate here. target is: top_left, top_right, bottom_left, bottom_right
-	// we want 90 degrees clockwise, so:
-	// 0 is top right, 1 is bottom right, 2 is top left, 3 is bottom left
-	Corners corners(anchors[2].center(), anchors[0].center(), anchors[3].center(), anchors[1].center());
+	Corners corners(anchors);
 	Deskewer de;
 	img = de.deskew(mat, corners);
 
@@ -99,12 +99,6 @@ inline bool MultiThreadedDecoder::add(cv::Mat mat)
 
 		if (decodeRes >= 6900)
 			++perfect;
-		/*else
-		{
-			std::stringstream fname;
-			fname << _dataPath << "/scan" << (scanned-1) << ".png";
-			//cv::imwrite(fname.str(), mat);
-		}*/
 	} );
 }
 
@@ -118,11 +112,11 @@ inline bool MultiThreadedDecoder::decode(const cv::Mat& img, bool should_preproc
 	} );
 }
 
-inline bool MultiThreadedDecoder::save(std::string path, const cv::Mat& img)
+inline void MultiThreadedDecoder::save(const cv::Mat& mat)
 {
-	return _pool.try_execute( [&, img, path] () {
-		cv::imwrite(path, img);
-	} );
+	std::stringstream fname;
+	fname << _dataPath << "/scan" << (scanned-1) << ".png";
+	cv::imwrite(fname.str(), mat);
 }
 
 inline void MultiThreadedDecoder::stop()

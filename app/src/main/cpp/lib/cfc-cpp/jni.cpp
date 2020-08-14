@@ -54,11 +54,7 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 	if (!_proc)
 		_proc = std::make_shared<MultiThreadedDecoder>(dataPath);
 
-	// undistort neeeds to be on the bg thread?
 	cv::Mat img = mat.clone();
-	//_und->undistort(img, img);
-	//_undistortTicks += (clock() - begin);
-
 	_proc->add(img);
 
 	if (_proc->files_in_flight() > 0 and _fileTransferStart == 0)
@@ -69,7 +65,7 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 
 	std::stringstream sstop;
 	sstop << "MTD says: " << _proc->num_threads() << " thread(s). " << _proc->backlog() << "? " << cv::ocl::haveOpenCL() << "-" << cv::ocl::useOpenCL();
-	sstop << "? " << (MultiThreadedDecoder::bytes / std::max<double>(1, MultiThreadedDecoder::decoded)) << "b 2ecc30.4";
+	sstop << "? " << (MultiThreadedDecoder::bytes / std::max<double>(1, MultiThreadedDecoder::decoded)) << "b 2ecc30.8";
 	std::stringstream ssmid;
 	ssmid << "#: " << MultiThreadedDecoder::perfect << " / " << MultiThreadedDecoder::decoded << " / " << MultiThreadedDecoder::scanned << " / " << _calls;
 	std::stringstream ssperf;
