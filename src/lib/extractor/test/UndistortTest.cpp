@@ -1,3 +1,4 @@
+/* This code is subject to the terms of the Mozilla Public License, v.2.0. http://mozilla.org/MPL/2.0/. */
 #include "unittest.h"
 
 #include "Undistort.h"
@@ -31,5 +32,5 @@ TEST_CASE( "UndistortTest/testUndistortAndExtract", "[unit]" )
 	Extractor ex;
 	assertTrue( ex.extract(out, out) );
 
-	assertEquals( 0x8326faca7727600, image_hash::average_hash(out) );
+	assertEquals( 0x8326daca7726690, image_hash::average_hash(out) );
 }
