@@ -1,3 +1,4 @@
+/* This code is subject to the terms of the Mozilla Public License, v.2.0. http://mozilla.org/MPL/2.0/. */
 #include "Scanner.h"
 
 #include "Corners.h"
@@ -168,7 +169,7 @@ bool Scanner::add_bottom_right_corner(std::vector<Anchor>& anchors, int cutoff)
 
 	std::vector<Anchor> candidates;
 	t1_scan_rows<ScanState_122>([&] (const Anchor& p) {
-		on_t1_scan<ScanState_122>(p, candidates);
+		on_t1_scan<ScanState_122>(p, candidates, false);
 	}, skip, ystart, yend, xstart, xend);
 
 	if (candidates.size() == 0)
@@ -186,7 +187,7 @@ bool Scanner::add_bottom_right_corner(std::vector<Anchor>& anchors, int cutoff)
 int Scanner::scan_primary(std::vector<Anchor>& candidates)
 {
 	t1_scan_rows<ScanState_114>([&] (const Anchor& p) {
-		on_t1_scan<ScanState_114>(p, candidates);
+		on_t1_scan<ScanState_114>(p, candidates, true);
 	});
 
 	int cutoff = filter_candidates(candidates);

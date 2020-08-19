@@ -1,3 +1,4 @@
+/* This code is subject to the terms of the Mozilla Public License, v.2.0. http://mozilla.org/MPL/2.0/. */
 
 #include "unittest.h"
 
@@ -17,7 +18,7 @@ TEST_CASE( "ExtractorTest/testExtract", "[unit]" )
 	ext.extract(TestCimbar::getSample("6bit/4_30_f0_big.jpg"), imgPath);
 
 	cv::Mat out = cv::imread(imgPath);
-	assertEquals( 0xacbb6b8cfa72624, image_hash::average_hash(out) );
+	assertEquals( 0x2cab6b9cfa72624, image_hash::average_hash(out) );
 }
 
 TEST_CASE( "ExtractorTest/testExtractMid", "[unit]" )
@@ -29,7 +30,7 @@ TEST_CASE( "ExtractorTest/testExtractMid", "[unit]" )
 	ext.extract(TestCimbar::getSample("6bit/4_30_f2_734.jpg"), imgPath);
 
 	cv::Mat out = cv::imread(imgPath);
-	assertEquals( 0xc57c225b6d2b802, image_hash::average_hash(out) );
+	assertEquals( 0xc5f8225b6c6bc02, image_hash::average_hash(out) );
 }
 
 TEST_CASE( "ExtractorTest/testExtractUpscale", "[unit]" )
