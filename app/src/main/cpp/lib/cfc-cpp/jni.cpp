@@ -21,6 +21,8 @@ namespace {
 	std::shared_ptr<MultiThreadedDecoder> _proc;
 
 	unsigned _calls = 0;
+	clock_t _fileTransferStart = 0;
+	clock_t _fileTransferTime = 0;
 
 	unsigned millis(unsigned num, unsigned denom)
 	{
@@ -55,9 +57,15 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 	cv::Mat img = mat.clone();
 	_proc->add(img);
 
+	if (_proc->files_in_flight() > 0 and _fileTransferStart == 0)
+		_fileTransferStart = clock();
+	if (_proc->files_decoded() > 0 and _fileTransferTime == 0)
+		_fileTransferTime = clock() - _fileTransferStart;
+
+
 	std::stringstream sstop;
 	sstop << "cfc using " << _proc->num_threads() << " thread(s). " << _proc->backlog() << "? ";
-	sstop << (MultiThreadedDecoder::bytes / std::max<double>(1, MultiThreadedDecoder::decoded)) << "b v0.5a";
+	sstop << (MultiThreadedDecoder::bytes / std::max<double>(1, MultiThreadedDecoder::decoded)) << "b v0.5testing";
 	std::stringstream ssmid;
 	ssmid << "#: " << MultiThreadedDecoder::perfect << " / " << MultiThreadedDecoder::decoded << " / " << MultiThreadedDecoder::scanned << " / " << _calls;
 	std::stringstream ssperf;
@@ -68,11 +76,14 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 	sstats << "Files received: " << _proc->files_decoded() << ", in flight: " << _proc->files_in_flight() << ". ";
 	sstats << percent(MultiThreadedDecoder::perfect, MultiThreadedDecoder::decoded) << "% decode. ";
 	sstats << percent(MultiThreadedDecoder::decoded, MultiThreadedDecoder::scanned) << "% scan.";
+	std::stringstream sstats2;
+	sstats2 << "File transfer time: " << millis(_fileTransferTime, 1000);
 
 	cv::putText(mat, sstop.str(), cv::Point(5,50), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 	cv::putText(mat, ssmid.str(), cv::Point(5,100), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 	cv::putText(mat, ssperf.str(), cv::Point(5,150), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 	cv::putText(mat, sstats.str(), cv::Point(5,200), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
+	cv::putText(mat, sstats2.str(), cv::Point(5,250), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 
 	/*std::stringstream ssperf2;
 	ssperf2 << "reader ctor: " << millis(Decoder::readerInitTicks, MultiThreadedDecoder::decoded);
