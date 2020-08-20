@@ -44,4 +44,4 @@ The libcimbar code is MPL 2.0. libcimbar's dependencies are a variety of MIT, BS
 	* observed an average of ~90ms for a 1024x1024 image on an opencl-enabled opencv 4.3 build
 	* I don't have a good feel for OpenCV's internals, but this does not seem like an inherent limitation of GPU->CPU data transfer to me. More likely it is an artifact of some OpenCV design decision, that may or may not be easily correctable.
 	* in my tests using OpenCL2.0 + SVM + OpenCV's (beta) SVM support... nothing good happened
-* ... if anyone knows the answer, or wants to dig in, feel free to contibute anything from snide comments to actual solutions!
+* I suppose this was a lot of words to say, "I don't know, but it seems complicated"
