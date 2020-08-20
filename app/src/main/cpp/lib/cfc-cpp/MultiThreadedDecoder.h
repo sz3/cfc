@@ -47,7 +47,7 @@ protected:
 
 inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path)
 	: _dec(cimbar::Config::ecc_bytes())
-	, _numThreads(4) //std::max<int>(((int)std::thread::hardware_concurrency()/2), 1))
+	, _numThreads(std::max<int>(((int)std::thread::hardware_concurrency()/2), 1))
 	, _pool(_numThreads, 1)
 	, _writer(data_path, cimbar::Config::fountain_chunk_size(cimbar::Config::ecc_bytes()))
 	, _dataPath(data_path)
