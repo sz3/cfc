@@ -1,3 +1,4 @@
+/* This code is subject to the terms of the Mozilla Public License, v.2.0. http://mozilla.org/MPL/2.0/. */
 #include "CimbWriter.h"
 
 #include "Common.h"
@@ -12,6 +13,12 @@ namespace {
 	cv::Mat getAnchor(bool dark)
 	{
 		string name = dark? "anchor-dark" : "anchor-light";
+		return cimbar::load_img(fmt::format("bitmap/{}.png", name));
+	}
+
+	cv::Mat getSecondaryAnchor(bool dark)
+	{
+		string name = dark? "anchor-secondary-dark" : "anchor-secondary-light";
 		return cimbar::load_img(fmt::format("bitmap/{}.png", name));
 	}
 
@@ -34,7 +41,7 @@ namespace {
 }
 
 CimbWriter::CimbWriter(bool dark, unsigned size)
-    : _position(Config::cell_spacing(), Config::num_cells(), Config::cell_size(), Config::corner_padding(), Config::interleave_blocks())
+    : _positions(Config::cell_spacing(), Config::num_cells(), Config::cell_size(), Config::corner_padding(), Config::interleave_blocks(), Config::interleave_partitions())
     , _encoder(Config::symbol_bits(), Config::color_bits())
 {
 	cv::Scalar bgcolor = dark? cv::Scalar(0, 0, 0) : cv::Scalar(0xFF, 0xFF, 0xFF);
@@ -44,7 +51,9 @@ CimbWriter::CimbWriter(bool dark, unsigned size)
 	paste(_image, anchor, 0, 0);
 	paste(_image, anchor, 0, size - anchor.cols);
 	paste(_image, anchor, size - anchor.rows, 0);
-	paste(_image, anchor, size - anchor.rows, size - anchor.cols);
+
+	cv::Mat secondaryAnchor = getSecondaryAnchor(dark);
+	paste(_image, secondaryAnchor, size - anchor.rows, size - anchor.cols);
 
 	cv::Mat hg = getHorizontalGuide(dark);
 	paste(_image, hg, (size/2) - (hg.cols/2), 2);
@@ -64,7 +73,7 @@ bool CimbWriter::write(unsigned bits)
 	if (done())
 		return false;
 
-	CellPosition::coordinate xy = _position.next();
+	CellPositions::coordinate xy = _positions.next();
 	cv::Mat cell = _encoder.encode(bits);
 	paste(_image, cell, xy.first, xy.second);
 	return true;
@@ -72,7 +81,7 @@ bool CimbWriter::write(unsigned bits)
 
 bool CimbWriter::done() const
 {
-	return _position.done();
+	return _positions.done();
 }
 
 cv::Mat CimbWriter::image() const

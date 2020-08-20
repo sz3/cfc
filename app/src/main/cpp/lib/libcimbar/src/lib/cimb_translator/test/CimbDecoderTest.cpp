@@ -1,3 +1,4 @@
+/* This code is subject to the terms of the Mozilla Public License, v.2.0. http://mozilla.org/MPL/2.0/. */
 #include "unittest.h"
 
 #include "CimbDecoder.h"
@@ -20,9 +21,34 @@ TEST_CASE( "CimbDecoderTest/testSimpleDecode", "[unit]" )
 	string root = TestCimbar::getProjectDir();
 	for (int i = 0; i < 16; ++i)
 	{
-		cv::Mat tile = cimbar::getTile(4, i, true, 0, root);
+		cv::Mat tile = cimbar::getTile(4, i, true, root);
 		cv::Mat tenxten(10, 10, tile.type());
-		tile.copyTo(tenxten(cv::Rect(cv::Point(0, 0), tile.size())));
+		tile.copyTo(tenxten(cv::Rect(cv::Point(1, 1), tile.size())));
+		unsigned res = cd.decode(tenxten);
+		assertEquals(i, res);
+	}
+}
+
+TEST_CASE( "CimbDecoderTest/testPrethresholdDecode", "[unit]" )
+{
+	// in practice, it can be useful to decode preprocessed symbol tiles
+	// the "0xFF" flag is passed to the average_hash function, which uses it to
+	// (1) skip computing the mean cell (threshold) value
+	// (2) compute the hash faster (exploiting that it's all 0s or all 1s)
+	// But in this test, we just want to see it get the right answer.
+	CimbDecoder cd(4, 0, true, 0xFF);
+
+	string root = TestCimbar::getProjectDir();
+	for (int i = 0; i < 16; ++i)
+	{
+		cv::Mat tile = cimbar::getTile(4, i, true, root);
+		cv::Mat tenxten(10, 10, tile.type());
+		tile.copyTo(tenxten(cv::Rect(cv::Point(1, 1), tile.size())));
+
+		// grayscale and threshold, since that's what average_hash needs
+		cv::cvtColor(tenxten, tenxten, cv::COLOR_BGR2GRAY);
+		cv::adaptiveThreshold(tenxten, tenxten, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, 9, 0);
+
 		unsigned res = cd.decode(tenxten);
 		assertEquals(i, res);
 	}
@@ -61,7 +87,7 @@ TEST_CASE( "CimbDecoderTest/testColorDecode", "[unit]" )
 	CimbDecoder cd(4, 2);
 
 	string root = TestCimbar::getProjectDir();
-	cv::Mat tile = cimbar::getTile(4, 2, true, 2, root);
+	cv::Mat tile = cimbar::getTile(4, 2, true, root, 4, 2);
 	cv::resize(tile, tile, cv::Size(10, 10));
 
 	unsigned color = cd.decode_color(tile, {0, 0});
@@ -78,7 +104,7 @@ TEST_CASE( "CimbDecoderTest/testAllColorDecodes", "[unit]" )
 	for (int c = 0; c < 4; ++c)  // 2 color bits == 4 colors
 		for (int i = 0; i < 16; ++i)
 		{
-			cv::Mat tile = cimbar::getTile(4, i, true, c, root);
+			cv::Mat tile = cimbar::getTile(4, i, true, root, 4, c);
 			cv::Mat tenxten(10, 10, tile.type());
 			tile.copyTo(tenxten(cv::Rect(cv::Point(1, 1), tile.size())));
 			DYNAMIC_SECTION( "testColor " << c << ":" << i )
@@ -97,10 +123,11 @@ TEST_CASE( "CimbDecoderTest/test_decode_symbol_sloppy", "[unit]" )
 
 	string sample_path = TestCimbar::getSample("mycell.png");
 	cv::Mat cell = cv::imread(sample_path);
-	cv::resize(cell, cell, cv::Size(10, 10));
 
 	unsigned drift_offset;
-	unsigned res = cd.decode_symbol(cell, drift_offset);
-	assertEquals(4, res);
-	assertEquals(2, drift_offset);
+	unsigned best_distance;
+	unsigned res = cd.decode_symbol(cell, drift_offset, best_distance);
+	assertEquals(0, res);
+	assertEquals(7, drift_offset);
+	assertEquals(6, best_distance);
 }

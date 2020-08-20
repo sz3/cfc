@@ -1,7 +1,13 @@
+/* This code is subject to the terms of the Mozilla Public License, v.2.0. http://mozilla.org/MPL/2.0/. */
 #include "CellDrift.h"
 
-CellDrift::CellDrift(int limit)
-    : _limit(limit)
+namespace {
+	const int _limit = 2;
+}
+
+CellDrift::CellDrift(int x, int y)
+    : _x(x)
+    , _y(y)
 {}
 
 int CellDrift::x() const

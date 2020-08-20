@@ -1,3 +1,4 @@
+/* This code is subject to the terms of the Mozilla Public License, v.2.0. http://mozilla.org/MPL/2.0/. */
 #pragma once
 
 #include <opencv2/opencv.hpp>
@@ -14,6 +15,7 @@ public:
 	Extractor();
 
 	int extract(const cv::Mat& img, cv::Mat& out);
+	int extract(const cv::UMat& img, cv::UMat& out);
 	int extract(std::string read_path, cv::Mat& out);
 	int extract(std::string read_path, std::string write_path);
 

@@ -1,3 +1,4 @@
+/* This code is subject to the terms of the Mozilla Public License, v.2.0. http://mozilla.org/MPL/2.0/. */
 #pragma once
 
 #include <climits>
@@ -56,12 +57,14 @@ public:
 		return {x() - scalar, y() - scalar};
 	}
 
-	point operator/(V div) const
+	template <typename T>
+	point operator/(T div) const
 	{
 		return {x() / div, y() / div};
 	}
 
-	point operator*(V scalar) const
+	template <typename T>
+	point operator*(T scalar) const
 	{
 		return {x() * scalar, y() * scalar};
 	}
@@ -71,6 +74,11 @@ public:
 		this->first += rhs.first;
 		this->second += rhs.second;
 		return *this;
+	}
+
+	V dot(const point& rhs) const
+	{
+		return (rhs.x() * x()) + (rhs.y() * y());
 	}
 
 	V squared_distance(const point& rhs) const

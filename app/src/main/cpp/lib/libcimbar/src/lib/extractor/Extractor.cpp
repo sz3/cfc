@@ -1,3 +1,4 @@
+/* This code is subject to the terms of the Mozilla Public License, v.2.0. http://mozilla.org/MPL/2.0/. */
 #include "Extractor.h"
 
 #include "Deskewer.h"
@@ -25,6 +26,22 @@ int Extractor::extract(const cv::Mat& img, cv::Mat& out)
 	return SUCCESS;
 }
 
+int Extractor::extract(const cv::UMat& img, cv::UMat& out)
+{
+	Scanner scanner(img);
+	std::vector<Anchor> points = scanner.scan();
+	if (points.size() < 4)
+		return FAILURE;
+
+	Corners corners(points);
+	Deskewer de;
+	out = de.deskew(img, corners);
+
+	if ( !corners.is_granular_scale(de.total_size()) )
+		return NEEDS_SHARPEN;
+	return SUCCESS;
+}
+
 int Extractor::extract(string read_path, cv::Mat& out)
 {
 	cv::Mat img = cv::imread(read_path);
@@ -33,9 +50,8 @@ int Extractor::extract(string read_path, cv::Mat& out)
 
 int Extractor::extract(string read_path, string write_path)
 {
-	cv::Mat img = cv::imread(read_path);
-	cv::Mat out;
-	int res = extract(img, out);
-	cv::imwrite(write_path, out);
+	cv::UMat img = cv::imread(read_path).getUMat(cv::ACCESS_FAST); // cv::USAGE_ALLOCATE_SHARED_MEMORY would be nice...;
+	int res = extract(img, img);
+	cv::imwrite(write_path, img);
 	return res;
 }

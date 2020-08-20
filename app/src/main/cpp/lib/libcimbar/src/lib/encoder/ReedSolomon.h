@@ -1,3 +1,4 @@
+/* This code is subject to the terms of the Mozilla Public License, v.2.0. http://mozilla.org/MPL/2.0/. */
 #pragma once
 
 extern "C" {
@@ -13,7 +14,7 @@ public:
 	{
 		unsigned size;
 
-		BadChunk(unsigned size)
+		explicit BadChunk(unsigned size)
 		    : size(size)
 		{}
 	};

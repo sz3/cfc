@@ -4,7 +4,7 @@ add_library(cfc-cpp
         SHARED
 
         jni.cpp
-        Processing.h
+        MultiThreadedDecoder.h
 )
 
 find_library(log-lib
@@ -14,10 +14,8 @@ find_library(log-lib
 
 target_link_libraries(cfc-cpp
 
--Wl,--start-group
         cimb_translator
 	extractor
--Wl,--end-group
 
         correct
         wirehair

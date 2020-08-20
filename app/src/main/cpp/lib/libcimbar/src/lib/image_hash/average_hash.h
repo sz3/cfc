@@ -1,6 +1,9 @@
+/* This code is subject to the terms of the Mozilla Public License, v.2.0. http://mozilla.org/MPL/2.0/. */
 #pragma once
 
+#include "ahash_result.h"
 #include "bit_extractor.h"
+#include "bit_file/bitmatrix.h"
 #include "cimb_translator/Cell.h"
 
 #include "intx/int128.hpp"
@@ -24,14 +27,34 @@ namespace image_hash
 			threshold = Cell(gray).mean_grayscale();
 
 		uint64_t res = 0;
-		int count = 0;
+		int bitpos = 63; // 8*8 - 1
 		for (int i = 0; i < gray.rows; ++i)
 		{
 			const uchar* p = gray.ptr<uchar>(i);
-			for (int j = 0; j < gray.cols; ++j, ++count)
-				res |= (uint64_t)(p[j] > threshold) << count;
+			for (int j = 0; j < gray.cols; ++j, --bitpos)
+				res |= (uint64_t)(p[j] > threshold) << bitpos;
 		}
 		return res;
+	}
+
+	inline ahash_result special_case_fuzzy_ahash(const cv::Mat& gray, unsigned mode)
+	{
+		// if the Mat is already 10x10 and threshold'd to (0, 0xFF), we can do some things...
+		intx::uint128 res(0);
+		int bitpos = 95; // 10*10 - 5
+		for (int i = 0; i < gray.rows; ++i)
+		{
+			const uchar* p = gray.ptr<uchar>(i);
+			for (int j = 0; j < gray.cols; j+=5, bitpos-=5)
+			{
+				const uint64_t* hax = reinterpret_cast<const uint64_t*>(p+j);
+				uint64_t mval = (*hax) & 0x101010101ULL;
+				const uint8_t* cv = reinterpret_cast<const uint8_t*>(&mval);
+				uint8_t val = cv[0] << 4 | cv[1] << 3 | cv[2] << 2 | cv[3] << 1 | cv[4];
+				res |= intx::uint128(val) << bitpos;
+			}
+		}
+		return ahash_result(res, mode);
 	}
 
 	// need something like a bitset_extractor(), with an api like:
@@ -42,7 +65,7 @@ namespace image_hash
 	//  ... with each index corresponding to an 8 bit read?
 	//  ... this way, we could do compile time validation that the return value makes sense.
 	//  ... e.g. if we have 8 params, that means it's a 64 bit number being returned.
-	inline intx::uint128 fuzzy_ahash(const cv::Mat& img)
+	inline ahash_result fuzzy_ahash(const cv::Mat& img, uchar threshold=0, unsigned mode=ahash_result::ALL)
 	{
 		// return 9 uint64_ts, each representing an 8x8 section of the 10x10 img
 		cv::Mat gray = img;
@@ -51,36 +74,31 @@ namespace image_hash
 		if (gray.cols != 10 or gray.rows != 10)
 			cv::resize(gray, gray, cv::Size(10, 10));
 
-		uchar threshold = Cell(gray).mean_grayscale();
+		if (threshold == 0)
+			threshold = Cell(gray).mean_grayscale();
+		else if (threshold == 0xFF)
+			return special_case_fuzzy_ahash(gray, mode);
 
 		intx::uint128 res(0);
-		int count = 0;
+		int bitpos = 99; // 10*10 - 1
 		for (int i = 0; i < gray.rows; ++i)
 		{
 			const uchar* p = gray.ptr<uchar>(i);
-			for (int j = 0; j < gray.cols; ++j, ++count)
-				res |= intx::uint128(p[j] > threshold) << count;
+			for (int j = 0; j < gray.cols; ++j, --bitpos)
+				res |= intx::uint128(p[j] > threshold) << bitpos;
 		}
-		return res;
+		return ahash_result(res, mode);
 	}
 
-	inline std::array<uint64_t, 9> extract_fuzzy_ahash(const intx::uint128& bits)
+	inline ahash_result fuzzy_ahash(const bitmatrix& img, unsigned mode=ahash_result::ALL)
 	{
-		bit_extractor<intx::uint128, 100> be(bits);
-		std::array<uint64_t, 9> hashes = {
-		    // top row -- top left bit is the end bit. bottom right is 0.
-		    be.extract(22, 32, 42, 52, 62, 72, 82, 92),  // left
-		    be.extract(21, 31, 41, 51, 61, 71, 81, 91),
-		    be.extract(20, 30, 40, 50, 60, 70, 80, 90),  // right
-		    // middle row
-		    be.extract(12, 22, 32, 42, 52, 62, 72, 82),
-		    be.extract(11, 21, 31, 41, 51, 61, 71, 81),
-		    be.extract(10, 20, 30, 40, 50, 60, 70, 80),
-		    // bottom row
-		    be.extract(2, 12, 22, 32, 42, 52, 62, 72),
-		    be.extract(1, 11, 21, 31, 41, 51, 61, 71),
-		    be.extract(0, 10, 20, 30, 40, 50, 60, 70)
-		};
-		return hashes;
+		intx::uint128 res(0);
+		int bitpos = 90; // 10*10 - 10
+		for (int i = 0; i < 10; ++i, bitpos-=10)
+		{
+			unsigned r = img.get(0, i, 10);
+			res |= intx::uint128(r) << bitpos;
+		}
+		return ahash_result(res, mode);
 	}
 }

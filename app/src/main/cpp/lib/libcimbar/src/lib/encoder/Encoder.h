@@ -1,3 +1,4 @@
+/* This code is subject to the terms of the Mozilla Public License, v.2.0. http://mozilla.org/MPL/2.0/. */
 #pragma once
 
 #include "reed_solomon_stream.h"
@@ -9,6 +10,7 @@
 #include "serialize/str.h"
 
 #include <opencv2/opencv.hpp>
+#include <functional>
 #include <optional>
 #include <string>
 
@@ -22,6 +24,7 @@ public:
 
 	unsigned encode(const std::string& filename, std::string output_prefix);
 	unsigned encode_fountain(const std::string& filename, std::string output_prefix);
+	unsigned encode_fountain(const std::string& filename, const std::function<bool(const cv::Mat&, unsigned)>& on_frame);
 
 protected:
 	unsigned _eccBytes;
@@ -96,35 +99,34 @@ inline unsigned Encoder::encode(const std::string& filename, std::string output_
 	return i;
 }
 
-inline unsigned Encoder::encode_fountain(const std::string& filename, std::string output_prefix)
+inline unsigned Encoder::encode_fountain(const std::string& filename, const std::function<bool(const cv::Mat&, unsigned)>& on_frame)
 {
 	std::ifstream f(filename);
-	fountain_encoder_stream fes = fountain_encoder_stream<626>::create(f);
-	// With ecc = 40, we have 60 rs blocks * 115 bytes per block == 6900 bytes to work with. 14 are the header.
-	// 626 * 11 == 6886.
-	// or 313 * 22 == 6886? Smaller may be better, given we need full chunks to make progress
-	// for 7 bits + 40 ecc, we'd have 70 blocks == 8050 bytes. -> 8036 of data.
-	//  could use any of 164, 196, 287, 574
-	// it would be nice to make this saner
-	unsigned target = fes.blocks_required() * 2 / 11;
-
-	std::vector<std::string> splits = turbo::str::split(filename, '/');
-	std::string shortname = splits.size()? splits.back() : filename;
+	fountain_encoder_stream fes = fountain_encoder_stream::create(f, cimbar::Config::fountain_chunk_size(_eccBytes), 0); // will eventually do something clever with encode_id?
+	// With ecc = 40, we have 60 rs blocks * 115 bytes per block == 6900 bytes to work with.
+	// the fountain_chunk_size will be 690.
+	// fountain_chunks_per_frame() is currently a constant (10).
+	unsigned requiredFrames = fes.blocks_required() * 2 / cimbar::Config::fountain_chunks_per_frame();
 
 	unsigned i = 0;
-	while (i < target)
+	while (i < requiredFrames)
 	{
-		// need to encode header at start of each frame...
-		fes.encode_metadata_block(shortname);
-
 		auto frame = encode_next(fes);
 		if (!frame)
 			break;
 
-		std::string output = fmt::format("{}-{}.png", output_prefix, i);
-		cv::imwrite(output, *frame);
+		if (!on_frame(*frame, i))
+			break;
 		++i;
 	}
 	return i;
 }
 
+inline unsigned Encoder::encode_fountain(const std::string& filename, std::string output_prefix)
+{
+	std::function<bool(const cv::Mat&, unsigned)> fun = [output_prefix] (const cv::Mat& frame, unsigned i) {
+		std::string output = fmt::format("{}-{}.png", output_prefix, i);
+		return cv::imwrite(output, frame);
+	};
+	return encode_fountain(filename, fun);
+}

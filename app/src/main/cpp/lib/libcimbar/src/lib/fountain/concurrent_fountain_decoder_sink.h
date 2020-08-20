@@ -1,27 +1,27 @@
+/* This code is subject to the terms of the Mozilla Public License, v.2.0. http://mozilla.org/MPL/2.0/. */
 #pragma once
 
-#include "fountain/fountain_decoder_sink.h"
+#include "fountain_decoder_sink.h"
 
 #include "concurrentqueue/concurrentqueue.h"
 #include <mutex>
 
-template <unsigned _bufferSize>
 class concurrent_fountain_decoder_sink
 {
 public:
-	concurrent_fountain_decoder_sink(std::string data_dir)
-		: _decoder(data_dir)
+	concurrent_fountain_decoder_sink(std::string data_dir, unsigned chunk_size)
+		: _decoder(data_dir, chunk_size)
 	{
+	}
+
+	bool good() const
+	{
+		return true;
 	}
 
 	unsigned chunk_size() const
 	{
 		return _decoder.chunk_size();
-	}
-
-	unsigned md_size() const
-	{
-		return _decoder.md_size();
 	}
 
 	unsigned num_streams() const
@@ -45,6 +45,13 @@ public:
 		}
 	}
 
+	bool write(const char* data, unsigned length)
+	{
+		std::string buffer(data, length);
+		operator<<(buffer);
+		return true;
+	}
+
 	concurrent_fountain_decoder_sink& operator<<(const std::string& buffer)
 	{
 		_backlog.enqueue(buffer);
@@ -54,6 +61,6 @@ public:
 
 protected:
 	std::mutex _mutex;
-	fountain_decoder_sink<_bufferSize> _decoder;
+	fountain_decoder_sink _decoder;
 	moodycamel::ConcurrentQueue< std::string > _backlog;
 };

@@ -9,8 +9,8 @@ import android.util.Log;
 import android.view.SurfaceView;
 import android.view.WindowManager;
 import android.widget.Toast;
+import androidx.annotation.NonNull;
 
-import org.jetbrains.annotations.NotNull;
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
@@ -48,7 +48,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         super.onCreate(savedInstanceState);
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        //getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
         // Permissions for Android 6+
         ActivityCompat.requestPermissions(
@@ -72,7 +72,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NotNull String[] permissions, @NotNull int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         if (requestCode == CAMERA_PERMISSION_REQUEST) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 mOpenCvCameraView.setCameraPermissionGranted();

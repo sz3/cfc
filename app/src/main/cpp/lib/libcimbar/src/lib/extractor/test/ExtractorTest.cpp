@@ -1,3 +1,5 @@
+/* This code is subject to the terms of the Mozilla Public License, v.2.0. http://mozilla.org/MPL/2.0/. */
+
 #include "unittest.h"
 
 #include "Extractor.h"
@@ -13,10 +15,10 @@ TEST_CASE( "ExtractorTest/testExtract", "[unit]" )
 
 	std::string imgPath = tempdir.path() / "ex.jpg";
 	Extractor ext;
-	ext.extract(TestCimbar::getSample("4color1.jpg"), imgPath);
+	ext.extract(TestCimbar::getSample("6bit/4_30_f0_big.jpg"), imgPath);
 
 	cv::Mat out = cv::imread(imgPath);
-	assertEquals( 0x434caab59f7e56c7, image_hash::average_hash(out) );
+	assertEquals( 0x2cab6b9cfa72624, image_hash::average_hash(out) );
 }
 
 TEST_CASE( "ExtractorTest/testExtractMid", "[unit]" )
@@ -25,10 +27,10 @@ TEST_CASE( "ExtractorTest/testExtractMid", "[unit]" )
 
 	std::string imgPath = tempdir.path() / "ex.jpg";
 	Extractor ext;
-	ext.extract(TestCimbar::getSample("4c-cam-40-f1.jpg"), imgPath);
+	ext.extract(TestCimbar::getSample("6bit/4_30_f2_734.jpg"), imgPath);
 
 	cv::Mat out = cv::imread(imgPath);
-	assertEquals( 0xe0d3b5b3f6b07075, image_hash::average_hash(out) );
+	assertEquals( 0xc5f8225b6c6bc02, image_hash::average_hash(out) );
 }
 
 TEST_CASE( "ExtractorTest/testExtractUpscale", "[unit]" )
@@ -37,9 +39,9 @@ TEST_CASE( "ExtractorTest/testExtractUpscale", "[unit]" )
 
 	std::string imgPath = tempdir.path() / "exup.jpg";
 	Extractor ext;
-	ext.extract(TestCimbar::getSample("4color-cam-140.jpg"), imgPath);
+	ext.extract(TestCimbar::getSample("6bit/4_30_f0_627.jpg"), imgPath);
 
 	cv::Mat out = cv::imread(imgPath);
-	assertEquals( 0x44c7f08cfd8f4c, image_hash::average_hash(out) );
+	assertEquals( 0x29c64eac233f6394, image_hash::average_hash(out) );
 }
 
