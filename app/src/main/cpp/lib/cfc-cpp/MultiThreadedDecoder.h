@@ -1,5 +1,6 @@
 #pragma once
 
+#include "compression/zstd_decompressor.h"
 #include "encoder/Decoder.h"
 #include "extractor/Anchor.h"
 #include "extractor/Deskewer.h"
@@ -9,6 +10,7 @@
 
 #include "concurrent/thread_pool.h"
 #include <opencv2/opencv.hpp>
+#include <fstream>
 
 class MultiThreadedDecoder
 {
@@ -41,7 +43,7 @@ protected:
 	Decoder _dec;
 	unsigned _numThreads;
 	turbo::thread_pool _pool;
-	concurrent_fountain_decoder_sink _writer;
+	concurrent_fountain_decoder_sink<cimbar::zstd_decompressor<std::ofstream>> _writer;
 	std::string _dataPath;
 };
 

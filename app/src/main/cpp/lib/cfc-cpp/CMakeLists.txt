@@ -19,6 +19,7 @@ target_link_libraries(cfc-cpp
 
         correct
         wirehair
+        zstd
         ${OPENCV_LIBS}
         ${log-lib}
 )
