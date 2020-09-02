@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
 
 project ( libcimbar )
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+	set(CMAKE_INSTALL_PREFIX "${libcimbar_SOURCE_DIR}/dist" CACHE PATH "..." FORCE)
+endif()
+
 
 if(NOT DEFINED OPENCV_LIBS)
 	set(OPENCV_LIBS "opencv_core" "opencv_imgcodecs" "opencv_imgproc" "opencv_photo")
@@ -17,6 +21,7 @@ set (PROJECTS
 
 	src/lib/bit_file
 	src/lib/cimb_translator
+	src/lib/compression
 	src/lib/encoder
 	src/lib/extractor
 	src/lib/fountain
@@ -30,6 +35,7 @@ set (PROJECTS
 	src/third_party_lib/libcorrect
 	src/third_party_lib/libpopcnt
 	src/third_party_lib/wirehair
+	src/third_party_lib/zstd
 )
 
 include_directories(
