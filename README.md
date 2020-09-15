@@ -42,7 +42,7 @@ The libcimbar code is MPL 2.0. libcimbar's dependencies are a variety of MIT, BS
 	* (this requires a custom OpenCV build. The official OpenCV android .so is built with openCL support disabled.)
 * Unfortunately, the runtime cost of copying data from UMat (GPU) -> Mat (CPU) is prohibitive.
 	* observed an average of ~90ms for a 1024x1024 image on an opencl-enabled opencv 4.3 build
-	* it is theoretically possible to get an openCL buffer onto the CPU without a long delay
-		* for example, by using OpenGL PBOs (physical buffer object), or something of the same general idea
-		* the buffer copy can happen in the background, freeing up system resources to do other things
-	* I don't have any code that does this... yet
+	* AFAIK, it is theoretically possible to get an openCL buffer onto the CPU without a long delay
+		* the general pattern would be the OpenGL PBO (physical buffer object) idea, or something along those lines
+		* the buffer copy would happen in the background, freeing up system resources to do other things
+		* I don't have any code that does this... yet
