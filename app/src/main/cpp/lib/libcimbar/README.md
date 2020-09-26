@@ -12,9 +12,7 @@ And the quest for 100 kb/s over the air gap...
 
 ## Platforms
 
-The code is written in C++, and developed/tested on amd64+linux and arm64+android. It probably works, or can be made to work, on other platforms. Maybe.
-
-I would like to add emscripten+wasm support.
+The code is written in C++, and developed/tested on amd64+linux, arm64+android, and emscripten+wasm. It probably works, or can be made to work, on other platforms. Maybe.
 
 ## Library dependencies
 
@@ -30,8 +28,13 @@ I would like to add emscripten+wasm support.
 * libcorrect - https://github.com/quiet/libcorrect
 * libpopcnt - https://github.com/kimwalisch/libpopcnt
 * PicoSHA2 - https://github.com/okdshin/PicoSHA2 (used for testing)
+* stb_image - https://github.com/nothings/stb (for the png loader)
 * wirehair - https://github.com/catid/wirehair
 * zstd - https://github.com/facebook/zstd
+
+Optional:
+* GLFW - https://github.com/glfw/glfw or `libglfw3-dev` (for when `opencv-highgui` is not available)
+    * this code path also needs/uses `GLES3/gl3.h` (`libgles2-mesa-dev` on ubuntu)
 
 ## Build
 
@@ -42,6 +45,8 @@ make install
 ```
 
 By default, libcimbar will try to put its build products under `./dist/bin/`.
+
+There is also a beta emscripten+WASM build for the encoder. See [WASM](WASM.md).
 
 ## Usage
 
@@ -59,7 +64,7 @@ Decode (extracts file into output directory):
 
 Encode and animate to window:
 ```
-./cimbar_video inputfile.pdf
+./cimbar_send inputfile.pdf
 ```
 
 ## Performance numbers
