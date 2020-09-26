@@ -1,6 +1,8 @@
 CMakeFiles/
 Testing/
 build/
+dist/
+web/cimbar_js.js
 CMakeCache.txt
 CMakeLists.txt.user
 CTestTestfile.cmake
