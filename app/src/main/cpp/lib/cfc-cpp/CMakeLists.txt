@@ -17,7 +17,7 @@ target_link_libraries(cfc-cpp
         cimb_translator
 	extractor
 
-        correct
+        correct_static
         wirehair
         zstd
         ${OPENCV_LIBS}
