@@ -19,6 +19,7 @@ using namespace cv;
 
 namespace {
 	std::shared_ptr<MultiThreadedDecoder> _proc;
+	std::set<std::string> _completed;
 
 	unsigned _calls = 0;
 	bool _transferStatus = false;
@@ -135,17 +136,25 @@ namespace {
 		cv::putText(mat, ssperf2.str(), cv::Point(5,300), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 		//*/
 	}
+
+	std::string jstring_to_cppstr(JNIEnv *env, const jstring& dataPathObj)
+	{
+		const char* temp = env->GetStringUTFChars(dataPathObj, NULL);
+		string res(temp);
+		env->ReleaseStringUTFChars(dataPathObj, temp);
+		return res;
+	}
 }
 
 extern "C" {
-void JNICALL
+jstring JNICALL
 Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env, jobject instance, jlong matAddr, jstring dataPathObj)
 {
 	++_calls;
 
 	// get Mat and path from raw address
 	Mat &mat = *(Mat *) matAddr;
-	string dataPath(env->GetStringUTFChars(dataPathObj, NULL));
+	string dataPath = jstring_to_cppstr(env, dataPathObj);
 
 	clock_t begin = clock();
 
@@ -170,6 +179,17 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 	double totalTime = double(clock() - begin) / CLOCKS_PER_SEC;
 	__android_log_print(ANDROID_LOG_INFO, TAG, "processImage computation time = %f seconds\n",
 						totalTime);
+
+	// return a decoded file to prompt the user to save it, if there is a new one
+	string result;
+	std::vector<string> all_decodes = _proc->get_done();
+	for (string&& s : all_decodes)
+		if (_completed.find(s) == _completed.end())
+		{
+			_completed.insert(s);
+			result = s;
+		}
+	return result;
 }
 
 void JNICALL
@@ -181,4 +201,3 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_shutdownJNI(JNIEnv *env, jo
 }
 
 }
-

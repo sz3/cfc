@@ -2,8 +2,11 @@ package com.galacticicecube.camerafilecopy;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+
+import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import android.util.Log;
 import android.view.SurfaceView;
@@ -19,12 +22,18 @@ import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Mat;
 
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+
 public class MainActivity extends Activity implements CvCameraViewListener2 {
     private static final String TAG = "MainActivity";
     private static final int CAMERA_PERMISSION_REQUEST = 1;
+    private static final int CREATE_FILE = 11;
 
     private CameraBridgeViewBase mOpenCvCameraView;
     private String dataPath;
+    private String activePath;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -128,12 +137,50 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         Mat mat = frame.rgba();
 
         // native call to process current camera frame
-        processImageJNI(mat.getNativeObjAddr(), this.dataPath);
+        String res = processImageJNI(mat.getNativeObjAddr(), this.dataPath);
+
+        // res will contain a file path if we completed a transfer. Ask the user where to save it
+        if (!res.isEmpty()) {
+            Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.setType("application/octet-stream");
+            intent.putExtra(Intent.EXTRA_TITLE, res);
+            // can't get putExtra to work for extra values, so we'll save it in the class
+            this.activePath = this.dataPath + "/" + res;
+            startActivityForResult(intent, CREATE_FILE);
+        }
 
         // return processed frame for live preview
         return mat;
     }
 
-    private native void processImageJNI(long mat, String path);
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        if (resultCode == RESULT_OK && requestCode == CREATE_FILE) {
+            if (this.activePath == null)
+                return;
+
+            try {
+                InputStream istream = new FileInputStream(this.activePath);
+                OutputStream ostream = getContentResolver().openOutputStream(data.getData());
+
+                byte[] buf = new byte[8192];
+                int length;
+                while ((length = istream.read(buf)) > 0) {
+                    ostream.write(buf, 0, length);
+                }
+                ostream.flush();
+                ostream.close();
+                istream.close();
+            } catch (Exception e) {
+                Log.e(TAG, "failed to write file " + e.toString());
+            } finally {
+                this.activePath = null;
+            }
+        }
+    }
+
+    private native String processImageJNI(long mat, String path);
     private native void shutdownJNI();
 }
+
