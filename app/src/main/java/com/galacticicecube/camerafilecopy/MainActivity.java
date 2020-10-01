@@ -22,6 +22,7 @@ import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Mat;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -160,21 +161,23 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
             if (this.activePath == null)
                 return;
 
-            try {
-                InputStream istream = new FileInputStream(this.activePath);
-                OutputStream ostream = getContentResolver().openOutputStream(data.getData());
-
+            // copy this.activePath (tempfile) to the user-specified location
+            try (
+                    InputStream istream = new FileInputStream(this.activePath);
+                    OutputStream ostream = getContentResolver().openOutputStream(data.getData())
+            ) {
                 byte[] buf = new byte[8192];
                 int length;
                 while ((length = istream.read(buf)) > 0) {
                     ostream.write(buf, 0, length);
                 }
                 ostream.flush();
-                ostream.close();
-                istream.close();
             } catch (Exception e) {
                 Log.e(TAG, "failed to write file " + e.toString());
             } finally {
+                try {
+                    new File(this.activePath).delete();
+                } catch (Exception e) {}
                 this.activePath = null;
             }
         }
