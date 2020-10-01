@@ -98,7 +98,7 @@ namespace {
 		int py = mat.rows - barOffsetL;
 		for (double p : progress)
 		{
-			int fillLength = barLength * (p / 100);
+			int fillLength = (barLength * p);
 			cv::line(mat, cv::Point(px - outlineOffset, py), cv::Point(px - outlineOffset, py - barLength), outline, outlineWidth);
 			cv::line(mat, cv::Point(px, py), cv::Point(px, py - fillLength), color, fillWidth);
 
