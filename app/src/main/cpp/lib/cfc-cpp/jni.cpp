@@ -183,13 +183,13 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 	// return a decoded file to prompt the user to save it, if there is a new one
 	string result;
 	std::vector<string> all_decodes = _proc->get_done();
-	for (string&& s : all_decodes)
+	for (string& s : all_decodes)
 		if (_completed.find(s) == _completed.end())
 		{
 			_completed.insert(s);
 			result = s;
 		}
-	return result;
+	return env->NewStringUTF(result.c_str());
 }
 
 void JNICALL
