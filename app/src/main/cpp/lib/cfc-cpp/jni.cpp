@@ -42,9 +42,10 @@ namespace {
 	{
 		int minsz = std::min(mat.cols, mat.rows);
 		int guideWidth = minsz >> 7;
-		int outlineWidth = minsz >> 8;
+		int outlineWidth = guideWidth + (minsz >> 8);
 		int guideLength = guideWidth << 3;
 		int guideOffset = minsz >> 5;
+		int outlineOffset = (outlineWidth - guideWidth) >> 1;
 
 		cv::Scalar color = in_progress? cv::Scalar(0,255,0) : cv::Scalar(255,255,255);
 		cv::Scalar outline = cv::Scalar(0,0,0);
@@ -58,28 +59,57 @@ namespace {
 
 		int tlx = guideOffset + xextra;
 		int tly = guideOffset + yextra;
-		int outlinex = tlx - (outlineWidth >> 1);
-		int outliney = tly - (outlineWidth >> 1);
-		cv::line(mat, cv::Point(tlx, outliney), cv::Point(tlx + guideLength, outliney), outline, outlineWidth + guideWidth);
-		cv::line(mat, cv::Point(outlinex, guideOffset), cv::Point(outlinex, tly + guideLength), outline, outlineWidth + guideWidth);
+		int outlinex = tlx - outlineOffset;
+		int outliney = tly - outlineOffset;
+		cv::line(mat, cv::Point(tlx, outliney), cv::Point(tlx + guideLength, outliney), outline, outlineWidth);
+		cv::line(mat, cv::Point(outlinex, guideOffset), cv::Point(outlinex, tly + guideLength), outline, outlineWidth);
 		cv::line(mat, cv::Point(tlx, guideOffset), cv::Point(tlx + guideLength, tly), color, guideWidth);
 		cv::line(mat, cv::Point(tlx, guideOffset), cv::Point(tlx, tly + guideLength), color, guideWidth);
 
 		int brx = mat.cols - guideOffset - guideWidth - xextra;
 		int bry = mat.rows - guideOffset - guideWidth - yextra;
-		outlinex = brx - (outlineWidth >> 1);
-		outliney = bry - (outlineWidth >> 1);
-		cv::line(mat, cv::Point(brx, outliney), cv::Point(brx - guideLength, outliney), outline, outlineWidth + guideWidth);
-		cv::line(mat, cv::Point(outlinex, bry), cv::Point(outlinex, bry - guideLength), outline, outlineWidth + guideWidth);
+		outlinex = brx - outlineOffset;
+		outliney = bry - outlineOffset;
+		cv::line(mat, cv::Point(brx, outliney), cv::Point(brx - guideLength, outliney), outline, outlineWidth);
+		cv::line(mat, cv::Point(outlinex, bry), cv::Point(outlinex, bry - guideLength), outline, outlineWidth);
 		cv::line(mat, cv::Point(brx, bry), cv::Point(brx - guideLength, bry), color, guideWidth);
 		cv::line(mat, cv::Point(brx, bry), cv::Point(brx, bry - guideLength), color, guideWidth);
+	}
+
+	void drawProgress(cv::Mat& mat, const std::vector<double>& progress)
+	{
+		if (progress.empty())
+			return;
+
+		int minsz = std::min(mat.cols, mat.rows);
+		int fillWidth = minsz >> 7;
+		int outlineWidth = fillWidth + (minsz >> 8);
+
+		int barLength = (minsz >> 1) + (minsz >> 2);
+		int barOffsetW = (minsz - barLength) >> 3;
+		int barOffsetL = (minsz - barLength) >> 1;
+		int outlineOffset = (outlineWidth - fillWidth) >> 1;
+
+		cv::Scalar color = cv::Scalar(255,255,255);
+		cv::Scalar outline = cv::Scalar(0,0,0);
+
+		int px = barOffsetW;
+		int py = mat.rows - barOffsetL;
+		for (double p : progress)
+		{
+			int fillLength = barLength * (p / 100);
+			cv::line(mat, cv::Point(px - outlineOffset, py), cv::Point(px - outlineOffset, py - barLength), outline, outlineWidth);
+			cv::line(mat, cv::Point(px, py), cv::Point(px, py - fillLength), color, fillWidth);
+
+			px += outlineWidth + outlineWidth;
+		}
 	}
 
 	void drawDebugInfo(cv::Mat& mat)
 	{
 		std::stringstream sstop;
 		sstop << "cfc using " << _proc->num_threads() << " thread(s). " << _proc->backlog() << "? ";
-		sstop << (MultiThreadedDecoder::bytes / std::max<double>(1, MultiThreadedDecoder::decoded)) << "b v0.5a";
+		sstop << (MultiThreadedDecoder::bytes / std::max<double>(1, MultiThreadedDecoder::decoded)) << "b v0.5c";
 		std::stringstream ssmid;
 		ssmid << "#: " << MultiThreadedDecoder::perfect << " / " << MultiThreadedDecoder::decoded << " / " << MultiThreadedDecoder::scanned << " / " << _calls;
 		std::stringstream ssperf;
@@ -132,8 +162,9 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env
 		_transferSnapshotCalls = nextSnapshot;
 	}
 
+	drawProgress(mat, _proc->get_progress());
 	drawGuidance(mat, _transferStatus);
-	drawDebugInfo(mat);
+	//drawDebugInfo(mat);
 
 	// log computation time to Android Logcat
 	double totalTime = double(clock() - begin) / CLOCKS_PER_SEC;
@@ -150,3 +181,4 @@ Java_com_galacticicecube_camerafilecopy_MainActivity_shutdownJNI(JNIEnv *env, jo
 }
 
 }
+
