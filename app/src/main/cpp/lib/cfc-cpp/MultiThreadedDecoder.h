@@ -34,6 +34,8 @@ public:
 	unsigned backlog() const;
 	unsigned files_in_flight() const;
 	unsigned files_decoded() const;
+	std::vector<std::string> get_done() const;
+	std::vector<double> get_progress() const;
 
 protected:
 	int do_extract(const cv::Mat& mat, cv::Mat& img);
@@ -144,4 +146,14 @@ inline unsigned MultiThreadedDecoder::files_in_flight() const
 inline unsigned MultiThreadedDecoder::files_decoded() const
 {
 	return _writer.num_done();
+}
+
+inline std::vector<std::string> MultiThreadedDecoder::get_done() const
+{
+	return _writer.get_done();
+}
+
+inline std::vector<double> MultiThreadedDecoder::get_progress() const
+{
+	return _writer.get_progress();
 }
