@@ -78,8 +78,6 @@ inline int MultiThreadedDecoder::do_extract(const cv::Mat& mat, cv::Mat& img)
 	Corners corners(anchors);
 	Deskewer de;
 	img = de.deskew(mat, corners);
-
-	//cv::cvtColor(img, img, cv::COLOR_RGB2BGR); // opencv JavaCameraView shenanigans defeated?
 	extractTicks += (clock() - begin);
 
 	return Extractor::SUCCESS;
