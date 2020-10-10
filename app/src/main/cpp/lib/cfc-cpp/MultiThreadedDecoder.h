@@ -118,7 +118,9 @@ inline void MultiThreadedDecoder::save(const cv::Mat& mat)
 {
 	std::stringstream fname;
 	fname << _dataPath << "/scan" << (scanned-1) << ".png";
-	cv::imwrite(fname.str(), mat);
+	cv::Mat bgr;
+	cv::cvtColor(mat, bgr, cv::COLOR_RGB2BGR);
+	cv::imwrite(fname.str(), bgr);
 }
 
 inline void MultiThreadedDecoder::stop()
