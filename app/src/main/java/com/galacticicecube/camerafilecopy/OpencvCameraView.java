@@ -67,6 +67,34 @@ public class OpencvCameraView extends CameraBridgeViewBase implements PreviewCal
         super(context, attrs);
     }
 
+    protected Size bestCameraFrameSize(List<?> supportedSizes, ListItemAccessor accessor, int surfaceWidth, int surfaceHeight) {
+        int calcWidth = 10000000;
+        int calcHeight = 10000000;
+
+        int maxAllowedWidth = (mMaxWidth != MAX_UNSPECIFIED && mMaxWidth < surfaceWidth)? mMaxWidth : surfaceWidth;
+        int maxAllowedHeight = (mMaxHeight != MAX_UNSPECIFIED && mMaxHeight < surfaceHeight)? mMaxHeight : surfaceHeight;
+
+        for (Object size : supportedSizes) {
+            int width = accessor.getWidth(size);
+            int height = accessor.getHeight(size);
+            int minDim = Math.min(width, height);
+            if (minDim < 960 || minDim > 1080)
+                continue;
+
+            if (width <= maxAllowedWidth && height <= maxAllowedHeight) {
+                if (width < calcWidth && height <= calcHeight) {
+                    calcWidth = (int) width;
+                    calcHeight = (int) height;
+                }
+            }
+        }
+        if (calcWidth < 10000000 && calcHeight < 10000000) {
+            return new Size(calcWidth, calcHeight);
+        }
+        // else
+        return calculateCameraFrameSize(supportedSizes, accessor, surfaceWidth, surfaceHeight);
+    }
+
     protected boolean initializeCamera(int width, int height) {
         Log.d(TAG, "Initialize java camera");
         boolean result = true;
@@ -145,7 +173,7 @@ public class OpencvCameraView extends CameraBridgeViewBase implements PreviewCal
 
                 if (sizes != null) {
                     /* Select the size that fits surface considering maximum size allowed */
-                    Size frameSize = calculateCameraFrameSize(sizes, new JavaCameraSizeAccessor(), width, height);
+                    Size frameSize = bestCameraFrameSize(sizes, new JavaCameraSizeAccessor(), width, height);
 
                     /* Image format NV21 causes issues in the Android emulators */
                     if (Build.FINGERPRINT.startsWith("generic")

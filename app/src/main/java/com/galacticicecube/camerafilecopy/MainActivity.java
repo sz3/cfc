@@ -58,7 +58,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         super.onCreate(savedInstanceState);
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        //getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
         // Permissions for Android 6+
         ActivityCompat.requestPermissions(
