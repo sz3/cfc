@@ -7,7 +7,7 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <com.galacticicecube.camerafilecopy.OpencvCameraView
+    <org.cimbar.camerafilecopy.OpencvCameraView
             android:layout_width="fill_parent"
             android:layout_height="fill_parent"
             android:id="@+id/main_surface"

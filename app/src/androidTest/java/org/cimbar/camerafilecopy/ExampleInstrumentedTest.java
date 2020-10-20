@@ -1,4 +1,4 @@
-package com.galacticicecube.camerafilecopy;
+package org.cimbar.camerafilecopy;
 
 import android.content.Context;
 
@@ -22,6 +22,6 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
 
-        assertEquals("com.galacticicecube.camerafilecopy", appContext.getPackageName());
+        assertEquals("org.cimbar.camerafilecopy", appContext.getPackageName());
     }
 }

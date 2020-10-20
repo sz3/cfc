@@ -1,4 +1,4 @@
-package com.galacticicecube.camerafilecopy;
+package org.cimbar.camerafilecopy;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;

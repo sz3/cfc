@@ -1,4 +1,4 @@
-package com.galacticicecube.camerafilecopy;
+package org.cimbar.camerafilecopy;
 
 import org.junit.Test;
 

@@ -1,4 +1,4 @@
-package com.galacticicecube.camerafilecopy;
+package org.cimbar.camerafilecopy;
 
 import android.Manifest;
 import android.app.Activity;
