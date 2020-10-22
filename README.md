@@ -38,11 +38,7 @@ The libcimbar code is MPL 2.0. libcimbar's dependencies are a variety of MIT, BS
 ## on using the GPU for performance speedups
 
 * It is a good idea. Some of the lengthiest operations in a decode are the preprocessing step on the scan (adaptive threshold) and the extraction of the cimbar frame from the image (perspective transform). There is also an optional sharpening filter that can run pre-decode --currently disabled in cfc. These all see radical speedups when run on the GPU. So why are we not using the GPU?
-* libcimbar uses OpenCV. For our purposes (Android), OpenCV nominally supports doing operations on the GPU via openCL, and its "TAPI" -- in C++, the cv::UMat class.
-	* (this requires a custom OpenCV build. The official OpenCV android .so is built with openCL support disabled.)
-* Unfortunately, the runtime cost of copying data from UMat (GPU) -> Mat (CPU) is prohibitive.
-	* observed an average of ~90ms for a 1024x1024 image on an opencl-enabled opencv 4.3 build
-	* AFAIK, it is theoretically possible to get an openCL buffer onto the CPU without a long delay
-		* the general pattern would be the OpenGL PBO (physical buffer object) idea, or something along those lines
-		* the buffer copy would happen in the background, freeing up system resources to do other things
-		* I don't have any code that does this... yet
+* libcimbar uses OpenCV. On Android, OpenCV uses openCL to run operations on the GPU, via its "TAPI". In C++, this is the cv::UMat class.
+	* copying data from a GPU UMat -> CPU Mat is slow enough that it negates all performance gains from using the GPU
+	* there is surely a way to avoid this bottleneck -- the cost is data synchonization between the GPU and CPU. There are various ways to make that happen in the background. But I'm not sure how in this case!
+* maybe some day.
