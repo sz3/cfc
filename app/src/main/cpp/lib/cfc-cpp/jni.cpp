@@ -118,7 +118,7 @@ namespace {
 		ssperf << ", extract: " << millis(MultiThreadedDecoder::extractTicks, MultiThreadedDecoder::extracted);
 		ssperf << ", decode: " << millis(MultiThreadedDecoder::decodeTicks, MultiThreadedDecoder::decoded);
 		ssperf << ", to-gpu: " << millis(MultiThreadedDecoder::gpuToTicks, MultiThreadedDecoder::extracted);
-		ssperf << ", from-gpu: " << millis(MultiThreadedDecoder::gpuFromTicks, MultiThreadedDecoder::decoded);
+		ssperf << ", from-gpu: " << millis(MultiThreadedDecoder::gpuFromTicks, MultiThreadedDecoder::gpuf);
 		std::stringstream sstats;
 		sstats << "Files received: " << _proc->files_decoded() << ", in flight: " << _proc->files_in_flight() << ". ";
 		sstats << percent(MultiThreadedDecoder::perfect, MultiThreadedDecoder::decoded) << "% decode. ";

@@ -28,7 +28,7 @@ public:
 	inline static clock_t scanTicks = 0;
 	inline static clock_t extracted = 0;
 	inline static clock_t extractTicks = 0;
-
+	inline static clock_t gpuf = 0;
 	inline static clock_t gpuToTicks = 0;
 	inline static clock_t gpuFromTicks = 0;
 
@@ -47,30 +47,37 @@ public:
 	std::vector<double> get_progress() const;
 
 protected:
-	int do_extract(const cv::Mat& mat, cv::UMat& out);
-	unsigned do_decode(cv::UMat& img);
+	bool do_extract(const cv::Mat& mat, int index);
+	unsigned do_decode(const cv::Mat& img);
 	void save(const cv::Mat& img);
+
+protected:
+	void gpu_extract(const cv::Mat& mat, const std::vector<Anchor>& anchors, int index);
+	void gpu_schedule_decode(int index);
 
 protected:
 	Decoder _dec;
 	unsigned _numThreads;
 	turbo::thread_pool _pool;
+	turbo::thread_pool _gpuPool;
 	concurrent_fountain_decoder_sink<cimbar::zstd_decompressor<std::ofstream>> _writer;
 	std::string _dataPath;
 };
 
 inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path)
 	: _dec(cimbar::Config::ecc_bytes())
-	, _numThreads(std::max<int>(((int)std::thread::hardware_concurrency()/2), 1))
+	, _numThreads(1)
 	, _pool(_numThreads, 1)
+	, _gpuPool(1, 1)
 	, _writer(data_path, cimbar::Config::fountain_chunk_size(cimbar::Config::ecc_bytes()))
 	, _dataPath(data_path)
 {
 	FountainInit::init();
 	_pool.start();
+	_gpuPool.start();
 }
 
-inline int MultiThreadedDecoder::do_extract(const cv::Mat& mat, cv::UMat& out)
+inline bool MultiThreadedDecoder::do_extract(const cv::Mat& mat, int index)
 {
 	++scanned;
 	clock_t begin = clock();
@@ -81,34 +88,58 @@ inline int MultiThreadedDecoder::do_extract(const cv::Mat& mat, cv::UMat& out)
 
 	//if (anchors.size() >= 3) save(mat);
 
-	if (anchors.size() < 4)
-		return Extractor::FAILURE;
+	bool success = anchors.size() >= 4;
+	if (success)
+		gpu_extract(mat, anchors, index);
 
+	return success;
+}
+
+inline void MultiThreadedDecoder::gpu_extract(const cv::Mat& mat, const std::vector<Anchor>& anchors, int index)
+{
 	++extracted;
-	begin = clock();
+
+	clock_t begin = clock();
 	cv::UMat gpuImg = mat.getUMat(cv::ACCESS_RW);
 	gpuToTicks += clock() - begin;
 
 	begin = clock();
 	Corners corners(anchors);
 	Deskewer de;
-	out = de.deskew(gpuImg, corners);
+	cv::UMat out = de.deskew(gpuImg, corners);
 	extractTicks += (clock() - begin);
 
-	return Extractor::SUCCESS;
+	_decoderRing[index] = out;
 }
 
-inline unsigned MultiThreadedDecoder::do_decode(cv::UMat& img)
+inline unsigned MultiThreadedDecoder::do_decode(const cv::Mat& img)
 {
 	++decoded;
+
 	clock_t begin = clock();
-	cv::Mat cpuImg = img.getMat(cv::ACCESS_FAST);
+	unsigned decodeRes = _dec.decode_fountain(img, _writer, false);
+	decodeTicks += clock() - begin;
+	bytes += decodeRes;
+	if (decodeRes >= 6900)
+		++perfect;
+
+	return decodeRes;
+}
+
+void MultiThreadedDecoder::gpu_schedule_decode(int index)
+{
+	++gpuf;
+
+	// decode half
+	cv::UMat& current = _decoderRing[index];
+	if (current.cols <= 0 or current.rows <= 0)
+		return;
+
+	clock_t begin = clock();
+	cv::Mat cpuImg = current.getMat(cv::ACCESS_FAST);
 	gpuFromTicks += clock() - begin;
 
-	begin = clock();
-	unsigned decodeRes = _dec.decode_fountain(cpuImg, _writer, false);
-	decodeTicks += clock() - begin;
-	return decodeRes;
+	do_decode(cpuImg);
 }
 
 inline bool MultiThreadedDecoder::add(cv::Mat mat, int index)
@@ -117,26 +148,14 @@ inline bool MultiThreadedDecoder::add(cv::Mat mat, int index)
 	// but the frame we attempt to decode will be an older one...
 	return _pool.try_execute( [&, mat, index] () {
 		// extract half. Fill up the ring for the next decode.
-		cv::UMat img;
-		int res = do_extract(mat, img);
-		if (res != Extractor::FAILURE)
-			_decoderRing[index] = img;
+		do_extract(mat, index);
 
 		// decode half
 		int decodeId = index + _numThreads + 5;
 		if (decodeId >= _decoderRing.size())
 			decodeId -= _decoderRing.size();
 
-		cv::UMat& current = _decoderRing[decodeId];
-		if (current.cols > 0 and current.rows > 0)
-		{
-			unsigned decodeRes = do_decode(current);
-			bytes += decodeRes;
-			if (decodeRes >= 6900)
-				++perfect;
-			current.release();
-		}
-
+		gpu_schedule_decode(decodeId);
 
 	} );
 }
