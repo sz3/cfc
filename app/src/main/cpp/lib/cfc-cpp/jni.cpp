@@ -167,7 +167,7 @@ Java_org_cimbar_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env, jobject
 		_proc = std::make_shared<MultiThreadedDecoder>(dataPath);
 
 	cv::Mat img = mat.clone();
-	_proc->add(img);
+	_proc->add(img, _calls % _proc->_decoderRing.size());
 
 	if (_calls & 32)
 	{

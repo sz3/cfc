@@ -32,10 +32,9 @@ public:
 	inline static clock_t gpuToTicks = 0;
 	inline static clock_t gpuFromTicks = 0;
 
-	inline static std::array<cv::UMat, 3> _decoderRing;
-	inline static unsigned _di = 0;
+	inline static std::array<cv::UMat, 32> _decoderRing;
 
-	bool add(cv::Mat mat);
+	bool add(cv::Mat mat, int index);
 	bool decode(const cv::Mat& img, bool should_preprocess);
 
 	void stop();
@@ -62,7 +61,7 @@ protected:
 
 inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path)
 	: _dec(cimbar::Config::ecc_bytes())
-	, _numThreads(1)
+	, _numThreads(std::max<int>(((int)std::thread::hardware_concurrency()/2), 1))
 	, _pool(_numThreads, 1)
 	, _writer(data_path, cimbar::Config::fountain_chunk_size(cimbar::Config::ecc_bytes()))
 	, _dataPath(data_path)
@@ -112,13 +111,23 @@ inline unsigned MultiThreadedDecoder::do_decode(cv::UMat& img)
 	return decodeRes;
 }
 
-inline bool MultiThreadedDecoder::add(cv::Mat mat)
+inline bool MultiThreadedDecoder::add(cv::Mat mat, int index)
 {
 	// runs once per frame
 	// but the frame we attempt to decode will be an older one...
-	return _pool.try_execute( [&, mat] () {
+	return _pool.try_execute( [&, mat, index] () {
+		// extract half. Fill up the ring for the next decode.
+		cv::UMat img;
+		int res = do_extract(mat, img);
+		if (res != Extractor::FAILURE)
+			_decoderRing[index] = img;
+
 		// decode half
-		cv::UMat& current = _decoderRing[_di];
+		int decodeId = index + _numThreads + 5;
+		if (decodeId >= _decoderRing.size())
+			decodeId -= _decoderRing.size();
+
+		cv::UMat& current = _decoderRing[decodeId];
 		if (current.cols > 0 and current.rows > 0)
 		{
 			unsigned decodeRes = do_decode(current);
@@ -128,15 +137,7 @@ inline bool MultiThreadedDecoder::add(cv::Mat mat)
 			current.release();
 		}
 
-		// extract half. Fill up the ring for the next decode.
-		cv::UMat img;
-		int res = do_extract(mat, img);
-		if (res != Extractor::FAILURE)
-		{
-			_decoderRing[_di] = img;
-			if (++_di >= _decoderRing.size())
-				_di = 0;
-		}
+
 	} );
 }
 
