@@ -201,7 +201,6 @@ public class OpencvCameraView extends CameraBridgeViewBase implements PreviewCal
                     {
                         params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
                     }
-                    //params.setPreviewFpsRange(30000,30000);
 
                     mCamera.setParameters(params);
                     params = mCamera.getParameters();
@@ -351,7 +350,7 @@ public class OpencvCameraView extends CameraBridgeViewBase implements PreviewCal
             if (mPreviewFormat == ImageFormat.NV21)
                 Imgproc.cvtColor(mYuvFrameData, mRgba, Imgproc.COLOR_YUV2RGBA_NV21, 4);
             else if (mPreviewFormat == ImageFormat.YV12)
-                Imgproc.cvtColor(mYuvFrameData, mRgba, Imgproc.COLOR_YUV2RGB_I420, 4);  // COLOR_YUV2RGBA_YV12 produces inverted colors
+                Imgproc.cvtColor(mYuvFrameData, mRgba, Imgproc.COLOR_YUV2RGB_I420, 4);
             else
                 throw new IllegalArgumentException("Preview Format can be NV21 or YV12");
 
