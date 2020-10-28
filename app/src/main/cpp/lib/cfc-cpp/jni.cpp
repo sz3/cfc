@@ -109,14 +109,17 @@ namespace {
 	void drawDebugInfo(cv::Mat& mat)
 	{
 		std::stringstream sstop;
-		sstop << "cfc using " << _proc->num_threads() << " thread(s). " << _proc->backlog() << "? ";
-		sstop << (MultiThreadedDecoder::bytes / std::max<double>(1, MultiThreadedDecoder::decoded)) << "b v0.5c";
+		sstop << "cfc using " << _proc->num_threads() << " thread(s). " << _proc->backlog() << "? " << cv::ocl::haveOpenCL() << "-" << cv::ocl::useOpenCL() << ": ";
+		sstop << (MultiThreadedDecoder::bytes / std::max<double>(1, MultiThreadedDecoder::decoded)) << "b v0.5d";
 		std::stringstream ssmid;
 		ssmid << "#: " << MultiThreadedDecoder::perfect << " / " << MultiThreadedDecoder::decoded << " / " << MultiThreadedDecoder::scanned << " / " << _calls;
 		std::stringstream ssperf;
 		ssperf << "scan: " << millis(MultiThreadedDecoder::scanTicks, MultiThreadedDecoder::scanned);
 		ssperf << ", extract: " << millis(MultiThreadedDecoder::extractTicks, MultiThreadedDecoder::decoded);
 		ssperf << ", decode: " << millis(MultiThreadedDecoder::decodeTicks, MultiThreadedDecoder::decoded);
+		ssperf << ", to-gpu: " << millis(MultiThreadedDecoder::gpuToTicks, MultiThreadedDecoder::gpud);
+		ssperf << ", from-gpu: " << millis(MultiThreadedDecoder::gpuFromTicks, MultiThreadedDecoder::decoded);
+		ssperf << ", preproc: " << millis(MultiThreadedDecoder::gpuPreTicks, MultiThreadedDecoder::gpud);
 		std::stringstream sstats;
 		sstats << "Files received: " << _proc->files_decoded() << ", in flight: " << _proc->files_in_flight() << ". ";
 		sstats << percent(MultiThreadedDecoder::perfect, MultiThreadedDecoder::decoded) << "% decode. ";
@@ -152,6 +155,9 @@ Java_org_cimbar_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env, jobject
 {
 	++_calls;
 
+	if (cv::ocl::haveOpenCL() and !cv::ocl::useOpenCL())
+		cv::ocl::setUseOpenCL(true);
+
 	// get Mat and path from raw address
 	Mat &mat = *(Mat *) matAddr;
 	string dataPath = jstring_to_cppstr(env, dataPathObj);
@@ -173,7 +179,7 @@ Java_org_cimbar_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env, jobject
 
 	drawProgress(mat, _proc->get_progress());
 	drawGuidance(mat, _transferStatus);
-	//drawDebugInfo(mat);
+	drawDebugInfo(mat);
 
 	// log computation time to Android Logcat
 	double totalTime = double(clock() - begin) / CLOCKS_PER_SEC;

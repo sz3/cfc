@@ -14,6 +14,9 @@
 
 class MultiThreadedDecoder
 {
+protected:
+	using umat_pair = std::pair<cv::UMat, cv::UMat>;
+
 public:
 	MultiThreadedDecoder(std::string data_path);
 
@@ -24,6 +27,17 @@ public:
 	inline static clock_t scanned = 0;
 	inline static clock_t scanTicks = 0;
 	inline static clock_t extractTicks = 0;
+
+	inline static clock_t gpud = 0;
+	inline static clock_t gpuToTicks = 0;
+	inline static clock_t gpuFromTicks = 0;
+	inline static clock_t gpuPreTicks = 0;
+
+	inline static std::array<umat_pair, 3> _inRing;
+	inline static unsigned _ii = 0;
+
+	inline static std::array<cv::UMat, 3> _decoderRing;
+	inline static unsigned _di = 0;
 
 	bool add(cv::Mat mat);
 	bool decode(const cv::Mat& img, bool should_preprocess);
@@ -38,7 +52,7 @@ public:
 	std::vector<double> get_progress() const;
 
 protected:
-	int do_extract(const cv::Mat& mat, cv::Mat& img);
+	int do_extract(const cv::UMat& mat, const cv::UMat& filtered, cv::UMat& out);
 	void save(const cv::Mat& img);
 
 protected:
@@ -51,7 +65,7 @@ protected:
 
 inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path)
 	: _dec(cimbar::Config::ecc_bytes())
-	, _numThreads(std::max<int>(((int)std::thread::hardware_concurrency()/2), 1))
+	, _numThreads(1)
 	, _pool(_numThreads, 1)
 	, _writer(data_path, cimbar::Config::fountain_chunk_size(cimbar::Config::ecc_bytes()))
 	, _dataPath(data_path)
@@ -60,11 +74,11 @@ inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path)
 	_pool.start();
 }
 
-inline int MultiThreadedDecoder::do_extract(const cv::Mat& mat, cv::Mat& img)
+inline int MultiThreadedDecoder::do_extract(const cv::UMat& mat, const cv::UMat& filtered, cv::UMat& out)
 {
 	clock_t begin = clock();
 
-	Scanner scanner(mat);
+	Scanner scanner(filtered);
 	std::vector<Anchor> anchors = scanner.scan();
 	++scanned;
 	scanTicks += (clock() - begin);
@@ -77,7 +91,7 @@ inline int MultiThreadedDecoder::do_extract(const cv::Mat& mat, cv::Mat& img)
 	begin = clock();
 	Corners corners(anchors);
 	Deskewer de;
-	img = de.deskew(mat, corners);
+	out = de.deskew(mat, corners);
 	extractTicks += (clock() - begin);
 
 	return Extractor::SUCCESS;
@@ -86,15 +100,46 @@ inline int MultiThreadedDecoder::do_extract(const cv::Mat& mat, cv::Mat& img)
 inline bool MultiThreadedDecoder::add(cv::Mat mat)
 {
 	return _pool.try_execute( [&, mat] () {
-		cv::Mat img;
-		int res = do_extract(mat, img);
+
+		++gpud;
+		clock_t begin = clock();
+		cv::UMat gpuImg = mat.getUMat(cv::ACCESS_RW);
+		gpuToTicks += clock() - begin;
+
+		begin = clock();
+		cv::UMat gpuFilt;
+		Scanner::preprocess_image(gpuImg, gpuFilt);
+		gpuPreTicks += clock() - begin;
+
+		_inRing[_ii] = {gpuImg, gpuFilt};
+		if (++_ii >= _inRing.size())
+			_ii = 0;
+
+		auto [gi, gf] = _inRing[_ii];
+		if (gi.cols <= 0 or gi.rows <= 0)
+			return;
+
+		cv::UMat img;
+		int res = do_extract(gi, gf, img);
 		if (res == Extractor::FAILURE)
 			return;
 
+		_decoderRing[_di] = img;
+		if (++_di >= _decoderRing.size())
+			_di = 0;
+
+		cv::UMat& current = _decoderRing[_di];
+		if (current.cols <= 0 or current.rows <= 0)
+			return;
+
+		begin = clock();
+		cv::Mat temp = current.getMat(cv::ACCESS_FAST);
+		gpuFromTicks += clock() - begin;
+
 		// if extracted image is small, we'll need to run some filters on it
-		clock_t begin = clock();
+		begin = clock();
 		bool should_preprocess = (res == Extractor::NEEDS_SHARPEN);
-		unsigned decodeRes = _dec.decode_fountain(img, _writer, should_preprocess);
+		unsigned decodeRes = _dec.decode_fountain(temp, _writer, should_preprocess);
 		bytes += decodeRes;
 		++decoded;
 		decodeTicks += clock() - begin;
