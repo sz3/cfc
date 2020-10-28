@@ -48,7 +48,7 @@ public:
 
 protected:
 	bool do_extract(const cv::Mat& mat, int index);
-	unsigned do_decode(const cv::Mat& img);
+	unsigned do_decode(cv::Mat img);
 	void save(const cv::Mat& img);
 
 protected:
@@ -59,7 +59,7 @@ protected:
 	Decoder _dec;
 	unsigned _numThreads;
 	turbo::thread_pool _pool;
-	turbo::thread_pool _gpuPool;
+	turbo::thread_pool _decodePool;
 	concurrent_fountain_decoder_sink<cimbar::zstd_decompressor<std::ofstream>> _writer;
 	std::string _dataPath;
 };
@@ -68,13 +68,13 @@ inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path)
 	: _dec(cimbar::Config::ecc_bytes())
 	, _numThreads(1)
 	, _pool(_numThreads, 1)
-	, _gpuPool(1, 1)
+	, _decodePool(2, 1)
 	, _writer(data_path, cimbar::Config::fountain_chunk_size(cimbar::Config::ecc_bytes()))
 	, _dataPath(data_path)
 {
 	FountainInit::init();
 	_pool.start();
-	_gpuPool.start();
+	_decodePool.start();
 }
 
 inline bool MultiThreadedDecoder::do_extract(const cv::Mat& mat, int index)
@@ -112,7 +112,7 @@ inline void MultiThreadedDecoder::gpu_extract(const cv::Mat& mat, const std::vec
 	_decoderRing[index] = out;
 }
 
-inline unsigned MultiThreadedDecoder::do_decode(const cv::Mat& img)
+inline unsigned MultiThreadedDecoder::do_decode(cv::Mat img)
 {
 	++decoded;
 
@@ -139,7 +139,9 @@ void MultiThreadedDecoder::gpu_schedule_decode(int index)
 	cv::Mat cpuImg = current.getMat(cv::ACCESS_FAST);
 	gpuFromTicks += clock() - begin;
 
-	do_decode(cpuImg);
+	_decodePool.try_execute( [&, cpuImg] () {
+		do_decode(cpuImg);
+	});
 }
 
 inline bool MultiThreadedDecoder::add(cv::Mat mat, int index)
