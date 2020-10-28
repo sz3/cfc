@@ -110,14 +110,14 @@ namespace {
 	{
 		std::stringstream sstop;
 		sstop << "cfc using " << _proc->num_threads() << " thread(s). " << _proc->backlog() << "? " << cv::ocl::haveOpenCL() << "-" << cv::ocl::useOpenCL() << ": ";
-		sstop << (MultiThreadedDecoder::bytes / std::max<double>(1, MultiThreadedDecoder::decoded)) << "b v0.5e";
+		sstop << (MultiThreadedDecoder::bytes / std::max<double>(1, MultiThreadedDecoder::decoded)) << "b v0.5cl";
 		std::stringstream ssmid;
 		ssmid << "#: " << MultiThreadedDecoder::perfect << " / " << MultiThreadedDecoder::decoded << " / " << MultiThreadedDecoder::scanned << " / " << _calls;
 		std::stringstream ssperf;
 		ssperf << "scan: " << millis(MultiThreadedDecoder::scanTicks, MultiThreadedDecoder::scanned);
 		ssperf << ", extract: " << millis(MultiThreadedDecoder::extractTicks, MultiThreadedDecoder::extracted);
 		ssperf << ", decode: " << millis(MultiThreadedDecoder::decodeTicks, MultiThreadedDecoder::decoded);
-		ssperf << ", to-gpu: " << millis(MultiThreadedDecoder::gpuToTicks, MultiThreadedDecoder::extracted);
+		ssperf << ", to-gpu: " << millis(MultiThreadedDecoder::gpuToTicks, MultiThreadedDecoder::gpup);
 		ssperf << ", from-gpu: " << millis(MultiThreadedDecoder::gpuFromTicks, MultiThreadedDecoder::gpuf);
 		std::stringstream sstats;
 		sstats << "Files received: " << _proc->files_decoded() << ", in flight: " << _proc->files_in_flight() << ". ";

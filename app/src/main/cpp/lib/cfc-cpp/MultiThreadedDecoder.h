@@ -15,7 +15,7 @@
 class MultiThreadedDecoder
 {
 protected:
-	using umat_pair = std::pair<cv::UMat, cv::UMat>;
+	using umat_pair = std::pair<cv::UMat, std::vector<Anchor>>;
 
 public:
 	MultiThreadedDecoder(std::string data_path);
@@ -28,11 +28,14 @@ public:
 	inline static clock_t scanTicks = 0;
 	inline static clock_t extracted = 0;
 	inline static clock_t extractTicks = 0;
-	inline static clock_t gpuf = 0;
+	inline static clock_t gpup = 0;
 	inline static clock_t gpuToTicks = 0;
+	inline static clock_t gpuf = 0;
 	inline static clock_t gpuFromTicks = 0;
 
 	inline static std::array<cv::UMat, 32> _decoderRing;
+	inline static std::array<umat_pair, 10> _inRing;
+	inline static unsigned _ii = 0;
 
 	bool add(cv::Mat mat, int index);
 	bool decode(const cv::Mat& img, bool should_preprocess);
@@ -47,19 +50,19 @@ public:
 	std::vector<double> get_progress() const;
 
 protected:
-	bool do_extract(const cv::Mat& mat, int index);
+	std::vector<Anchor> do_scan(const cv::Mat& img);
 	unsigned do_decode(cv::Mat img);
 	void save(const cv::Mat& img);
 
 protected:
-	void gpu_extract(const cv::Mat& mat, const std::vector<Anchor>& anchors, int index);
+	void gpu_extract(const cv::UMat& mat, const std::vector<Anchor>& anchors, int index);
 	void gpu_schedule_decode(int index);
 
 protected:
 	Decoder _dec;
 	unsigned _numThreads;
 	turbo::thread_pool _pool;
-	turbo::thread_pool _decodePool;
+	turbo::thread_pool _gpuPool;
 	concurrent_fountain_decoder_sink<cimbar::zstd_decompressor<std::ofstream>> _writer;
 	std::string _dataPath;
 };
@@ -68,42 +71,34 @@ inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path)
 	: _dec(cimbar::Config::ecc_bytes())
 	, _numThreads(1)
 	, _pool(_numThreads, 1)
-	, _decodePool(2, 1)
+	, _gpuPool(1, 1)
 	, _writer(data_path, cimbar::Config::fountain_chunk_size(cimbar::Config::ecc_bytes()))
 	, _dataPath(data_path)
 {
 	FountainInit::init();
 	_pool.start();
-	_decodePool.start();
+	_gpuPool.start();
 }
 
-inline bool MultiThreadedDecoder::do_extract(const cv::Mat& mat, int index)
+inline std::vector<Anchor> MultiThreadedDecoder::do_scan(const cv::Mat& img)
 {
 	++scanned;
 	clock_t begin = clock();
 
-	Scanner scanner(mat);
+	Scanner scanner(img);
 	std::vector<Anchor> anchors = scanner.scan();
 	scanTicks += (clock() - begin);
 
 	//if (anchors.size() >= 3) save(mat);
 
-	bool success = anchors.size() >= 4;
-	if (success)
-		gpu_extract(mat, anchors, index);
-
-	return success;
+	return anchors;
 }
 
-inline void MultiThreadedDecoder::gpu_extract(const cv::Mat& mat, const std::vector<Anchor>& anchors, int index)
+inline void MultiThreadedDecoder::gpu_extract(const cv::UMat& gpuImg, const std::vector<Anchor>& anchors, int index)
 {
 	++extracted;
 
 	clock_t begin = clock();
-	cv::UMat gpuImg = mat.getUMat(cv::ACCESS_RW);
-	gpuToTicks += clock() - begin;
-
-	begin = clock();
 	Corners corners(anchors);
 	Deskewer de;
 	cv::UMat out = de.deskew(gpuImg, corners);
@@ -139,7 +134,7 @@ void MultiThreadedDecoder::gpu_schedule_decode(int index)
 	cv::Mat cpuImg = current.getMat(cv::ACCESS_FAST);
 	gpuFromTicks += clock() - begin;
 
-	_decodePool.try_execute( [&, cpuImg] () {
+	_pool.try_execute( [&, cpuImg] () {
 		do_decode(cpuImg);
 	});
 }
@@ -148,9 +143,29 @@ inline bool MultiThreadedDecoder::add(cv::Mat mat, int index)
 {
 	// runs once per frame
 	// but the frame we attempt to decode will be an older one...
-	return _pool.try_execute( [&, mat, index] () {
-		// extract half. Fill up the ring for the next decode.
-		do_extract(mat, index);
+	return _gpuPool.try_execute( [&, mat, index] () {
+
+		// scan, and fill extract ring
+		std::vector<Anchor> anchors = do_scan(mat);
+		bool success = anchors.size() >= 4;
+		if (success)
+		{
+			++gpup;
+			clock_t begin = clock();
+			cv::UMat gpuImg = mat.getUMat(cv::ACCESS_RW);
+			gpuToTicks += clock() - begin;
+
+			_inRing[_ii] = {gpuImg, anchors};
+		}
+		else
+			_inRing[_ii] = {};
+		if (++_ii >= _inRing.size())
+			_ii = 0;
+
+		// look at extract ring, and pull the next element
+		auto [gpuImg, ancr] = _inRing[_ii];
+		if (gpuImg.cols > 0 and gpuImg.rows > 0)
+			gpu_extract(gpuImg, ancr, index);
 
 		// decode half
 		int decodeId = index + _numThreads + 5;
@@ -184,6 +199,7 @@ inline void MultiThreadedDecoder::save(const cv::Mat& mat)
 inline void MultiThreadedDecoder::stop()
 {
 	_pool.stop();
+	_gpuPool.stop();
 }
 
 inline unsigned MultiThreadedDecoder::num_threads() const
