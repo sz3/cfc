@@ -30,8 +30,8 @@ public:
 	inline static clock_t extractTicks = 0;
 	inline static clock_t gpup = 0;
 	inline static clock_t gpuPreTicks = 0;
-	inline static clock_t gpuf = 0;
 	inline static clock_t gpuToTicks = 0;
+	inline static clock_t gpuf = 0;
 	inline static clock_t gpuFromTicks = 0;
 
 	inline static std::array<cv::UMat, 32> _decoderRing;
@@ -131,7 +131,7 @@ void MultiThreadedDecoder::gpu_schedule_decode(int index)
 	++gpuf;
 
 	// decode half
-	cv::UMat& current = _decoderRing[index];
+	cv::UMat current = _decoderRing[index];
 	if (current.cols <= 0 or current.rows <= 0)
 		return;
 
@@ -139,9 +139,11 @@ void MultiThreadedDecoder::gpu_schedule_decode(int index)
 	cv::Mat cpuImg = current.getMat(cv::ACCESS_FAST);
 	gpuFromTicks += clock() - begin;
 
-	_pool.try_execute( [&, cpuImg] () {
+	_pool.try_execute( [&, current, cpuImg] () {
 		do_decode(cpuImg);
 	});
+
+	_decoderRing[index] = cv::UMat();
 }
 
 inline bool MultiThreadedDecoder::add(cv::Mat mat, int index)
@@ -151,22 +153,27 @@ inline bool MultiThreadedDecoder::add(cv::Mat mat, int index)
 	return _gpuPool.try_execute( [&, mat, index] () {
 		// extract half. Fill up the ring for the next decode.
 		++gpup;
-		clock_t begin = clock();
-		cv::UMat gpuImg = mat.getUMat(cv::ACCESS_RW);
-		gpuToTicks += clock() - begin;
+		{
+			clock_t begin = clock();
+			cv::UMat gpuImg = mat.getUMat(cv::ACCESS_RW);
+			gpuToTicks += clock() - begin;
 
-		begin = clock();
-		cv::UMat gpuFilt;
-		Scanner::preprocess_image(gpuImg, gpuFilt);
-		gpuPreTicks += clock() - begin;
+			begin = clock();
+			cv::UMat gpuFilt;
+			Scanner::preprocess_image(gpuImg, gpuFilt);
+			gpuPreTicks += clock() - begin;
 
-		_inRing[_ii] = {gpuImg, gpuFilt};
-		if (++_ii >= _inRing.size())
-			_ii = 0;
+			_inRing[_ii] = {gpuImg, gpuFilt};
+			if (++_ii >= _inRing.size())
+				_ii = 0;
+		}
 
-		auto [gi, gf] = _inRing[_ii];
-		if (gi.cols > 0 and gi.rows > 0)
-			do_extract(gi, gf, index);
+		{
+			auto [gi, gp] = _inRing[_ii];
+			if (!gi.empty())
+				do_extract(gi, gp, index);
+			_inRing[_ii] = {};
+		}
 
 		// decode half
 		int decodeId = index + _numThreads + 5;
