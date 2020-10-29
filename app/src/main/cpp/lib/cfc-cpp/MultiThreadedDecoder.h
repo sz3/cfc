@@ -136,10 +136,11 @@ void MultiThreadedDecoder::gpu_schedule_decode(int index)
 		return;
 
 	clock_t begin = clock();
-	cv::Mat cpuImg = current.getMat(cv::ACCESS_FAST);
+	cv::Mat cpuImg;
+	current.copyTo(cpuImg);
 	gpuFromTicks += clock() - begin;
 
-	_pool.try_execute( [&, current, cpuImg] () {
+	_pool.try_execute( [&, cpuImg] () {
 		do_decode(cpuImg);
 	});
 
