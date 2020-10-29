@@ -15,7 +15,8 @@
 class MultiThreadedDecoder
 {
 protected:
-	using umat_pair = std::pair<cv::UMat, std::vector<Anchor>>;
+	using mat_anchor = std::pair<cv::Mat, std::vector<Anchor>>;
+	using umat_anchor = std::pair<cv::UMat, std::vector<Anchor>>;
 
 public:
 	MultiThreadedDecoder(std::string data_path);
@@ -33,9 +34,10 @@ public:
 	inline static clock_t gpuf = 0;
 	inline static clock_t gpuFromTicks = 0;
 
+	inline static std::array<umat_anchor, 16> _extractorRing;
+	inline static unsigned _ei = 0;
+	inline static std::array<mat_anchor, 32> _inRing;
 	inline static std::array<cv::UMat, 32> _decoderRing;
-	inline static std::array<umat_pair, 10> _inRing;
-	inline static unsigned _ii = 0;
 
 	bool add(cv::Mat mat, int index);
 	bool decode(const cv::Mat& img, bool should_preprocess);
@@ -97,7 +99,6 @@ inline std::vector<Anchor> MultiThreadedDecoder::do_scan(const cv::Mat& img)
 inline void MultiThreadedDecoder::gpu_extract(const cv::UMat& gpuImg, const std::vector<Anchor>& anchors, int index)
 {
 	++extracted;
-
 	clock_t begin = clock();
 	Corners corners(anchors);
 	Deskewer de;
@@ -134,9 +135,7 @@ void MultiThreadedDecoder::gpu_schedule_decode(int index)
 	cv::Mat cpuImg = current.getMat(cv::ACCESS_FAST);
 	gpuFromTicks += clock() - begin;
 
-	_pool.try_execute( [&, current, cpuImg] () {
-		do_decode(cpuImg);
-	});
+	do_decode(cpuImg);
 
 	_decoderRing[index] = cv::UMat();
 }
@@ -145,33 +144,15 @@ inline bool MultiThreadedDecoder::add(cv::Mat mat, int index)
 {
 	// runs once per frame
 	// but the frame we attempt to decode will be an older one...
-	return _gpuPool.try_execute( [&, mat, index] () {
-
-		// scan, and fill extract ring
+	_pool.try_execute( [&, mat, index] () {
+		// scan
 		{
 			std::vector<Anchor> anchors = do_scan(mat);
 			bool success = anchors.size() >= 4;
 			if (success)
-			{
-				++gpup;
-				clock_t begin = clock();
-				cv::UMat gpuImg = mat.getUMat(cv::ACCESS_RW);
-				gpuToTicks += clock() - begin;
-
-				_inRing[_ii] = {gpuImg, anchors};
-			}
+				_inRing[index] = {mat, anchors};
 			else
-				_inRing[_ii] = {};
-			if (++_ii >= _inRing.size())
-				_ii = 0;
-		}
-
-		// look at extract ring, and pull the next element
-		{
-			auto [gpuImg, ancr] = _inRing[_ii];
-			if (gpuImg.cols > 0 and gpuImg.rows > 0)
-				gpu_extract(gpuImg, ancr, index);
-			_inRing[_ii] = {};
+				_inRing[index] = {};
 		}
 
 		// decode half
@@ -180,6 +161,40 @@ inline bool MultiThreadedDecoder::add(cv::Mat mat, int index)
 			decodeId -= _decoderRing.size();
 
 		gpu_schedule_decode(decodeId);
+	});
+
+	return _gpuPool.try_execute( [&, index] () {
+		// prepare extract ring
+		{
+			int exid = index + _numThreads + 5;
+			if (exid >= _inRing.size())
+				exid -= _inRing.size();
+
+			auto [img, ancr] = _inRing[exid];
+			if (ancr.size() >= 4)
+			{
+				++gpup;
+				clock_t begin = clock();
+				cv::UMat gpuImg = img.getUMat(cv::ACCESS_RW);
+				gpuToTicks += clock() - begin;
+
+				_extractorRing[_ei] = {gpuImg, ancr};
+			}
+			else
+				_extractorRing[_ei] = {};
+			if (++_ei >= _extractorRing.size())
+				_ei = 0;
+
+			_inRing[exid] = {};
+		}
+
+		// look at extract ring, and pull the next element
+		{
+			auto [gpuImg, ancr] = _extractorRing[_ei];
+			if (ancr.size() >= 4)
+				gpu_extract(gpuImg, ancr, index);
+			_extractorRing[_ei] = {};
+		}
 
 	} );
 }
