@@ -15,7 +15,6 @@
 class MultiThreadedDecoder
 {
 protected:
-	using mat_anchor = std::pair<cv::Mat, std::vector<Anchor>>;
 	using umat_anchor = std::pair<cv::UMat, std::vector<Anchor>>;
 
 public:
@@ -34,9 +33,7 @@ public:
 	inline static clock_t gpuf = 0;
 	inline static clock_t gpuFromTicks = 0;
 
-	inline static std::array<umat_anchor, 16> _extractorRing;
-	inline static unsigned _ei = 0;
-	inline static std::array<mat_anchor, 32> _inRing;
+	inline static std::array<umat_anchor, 32> _extractorRing;
 	inline static std::array<cv::UMat, 32> _decoderRing;
 
 	bool add(cv::Mat mat, int index);
@@ -148,11 +145,16 @@ inline bool MultiThreadedDecoder::add(cv::Mat mat, int index)
 		// scan
 		{
 			std::vector<Anchor> anchors = do_scan(mat);
-			bool success = anchors.size() >= 4;
-			if (success)
-				_inRing[index] = {mat, anchors};
-			else
-				_inRing[index] = {};
+			if (anchors.size() >= 4)
+			{
+				++gpup;
+				clock_t begin = clock();
+				cv::UMat& gpuImg = _extractorRing[index].first;
+				mat.copyTo(gpuImg);
+				gpuToTicks += clock() - begin;
+
+				_extractorRing[index].second = anchors;
+			}
 		}
 
 		// decode half
@@ -164,36 +166,17 @@ inline bool MultiThreadedDecoder::add(cv::Mat mat, int index)
 	});
 
 	return _gpuPool.try_execute( [&, index] () {
-		// prepare extract ring
-		{
-			int exid = index + _numThreads + 5;
-			if (exid >= _inRing.size())
-				exid -= _inRing.size();
-
-			auto [img, ancr] = _inRing[exid];
-			if (ancr.size() >= 4)
-			{
-				++gpup;
-				clock_t begin = clock();
-				cv::UMat gpuImg = img.getUMat(cv::ACCESS_RW);
-				gpuToTicks += clock() - begin;
-
-				_extractorRing[_ei] = {gpuImg, ancr};
-			}
-			else
-				_extractorRing[_ei] = {};
-			if (++_ei >= _extractorRing.size())
-				_ei = 0;
-
-			_inRing[exid] = {};
-		}
 
 		// look at extract ring, and pull the next element
 		{
-			auto [gpuImg, ancr] = _extractorRing[_ei];
+			int exid = index + _numThreads + 5;
+			if (exid >= _extractorRing.size())
+				exid -= _extractorRing.size();
+
+			auto [gpuImg, ancr] = _extractorRing[exid];
 			if (ancr.size() >= 4)
 				gpu_extract(gpuImg, ancr, index);
-			_extractorRing[_ei] = {};
+			_extractorRing[exid].second = {};
 		}
 
 	} );
