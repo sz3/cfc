@@ -69,7 +69,7 @@ protected:
 
 inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path)
 	: _dec(cimbar::Config::ecc_bytes())
-	, _numThreads(1)
+	, _numThreads(2)
 	, _pool(_numThreads, 1)
 	, _gpuPool(1, 1)
 	, _writer(data_path, cimbar::Config::fountain_chunk_size(cimbar::Config::ecc_bytes()))
@@ -126,7 +126,7 @@ void MultiThreadedDecoder::gpu_schedule_decode(int index)
 	++gpuf;
 
 	// decode half
-	cv::UMat& current = _decoderRing[index];
+	cv::UMat current = _decoderRing[index];
 	if (current.cols <= 0 or current.rows <= 0)
 		return;
 
@@ -134,9 +134,11 @@ void MultiThreadedDecoder::gpu_schedule_decode(int index)
 	cv::Mat cpuImg = current.getMat(cv::ACCESS_FAST);
 	gpuFromTicks += clock() - begin;
 
-	_pool.try_execute( [&, cpuImg] () {
+	_pool.try_execute( [&, current, cpuImg] () {
 		do_decode(cpuImg);
 	});
+
+	_decoderRing[index] = cv::UMat();
 }
 
 inline bool MultiThreadedDecoder::add(cv::Mat mat, int index)
@@ -146,26 +148,31 @@ inline bool MultiThreadedDecoder::add(cv::Mat mat, int index)
 	return _gpuPool.try_execute( [&, mat, index] () {
 
 		// scan, and fill extract ring
-		std::vector<Anchor> anchors = do_scan(mat);
-		bool success = anchors.size() >= 4;
-		if (success)
 		{
-			++gpup;
-			clock_t begin = clock();
-			cv::UMat gpuImg = mat.getUMat(cv::ACCESS_RW);
-			gpuToTicks += clock() - begin;
+			std::vector<Anchor> anchors = do_scan(mat);
+			bool success = anchors.size() >= 4;
+			if (success)
+			{
+				++gpup;
+				clock_t begin = clock();
+				cv::UMat gpuImg = mat.getUMat(cv::ACCESS_RW);
+				gpuToTicks += clock() - begin;
 
-			_inRing[_ii] = {gpuImg, anchors};
+				_inRing[_ii] = {gpuImg, anchors};
+			}
+			else
+				_inRing[_ii] = {};
+			if (++_ii >= _inRing.size())
+				_ii = 0;
 		}
-		else
-			_inRing[_ii] = {};
-		if (++_ii >= _inRing.size())
-			_ii = 0;
 
 		// look at extract ring, and pull the next element
-		auto [gpuImg, ancr] = _inRing[_ii];
-		if (gpuImg.cols > 0 and gpuImg.rows > 0)
-			gpu_extract(gpuImg, ancr, index);
+		{
+			auto [gpuImg, ancr] = _inRing[_ii];
+			if (gpuImg.cols > 0 and gpuImg.rows > 0)
+				gpu_extract(gpuImg, ancr, index);
+			_inRing[_ii] = {};
+		}
 
 		// decode half
 		int decodeId = index + _numThreads + 5;
