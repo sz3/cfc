@@ -13,16 +13,16 @@ set( OPENCV_LIBS "lib_opencv" )
 
 # our stuff
 set (PROJECTS
-   lib/cfc-cpp
-   lib/concurrent
-   lib/libcimbar
+   cfc-cpp
+   concurrent
+   libcimbar
 )
 
 include_directories(
         ${OpenCV_DIR}/jni/include
-        lib
-        lib/libcimbar/src/lib
-        lib/libcimbar/src/third_party_lib
+        .
+        libcimbar/src/lib
+        libcimbar/src/third_party_lib
 )
 
 foreach(proj ${PROJECTS})
