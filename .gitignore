@@ -1,0 +1,12 @@
+CMakeFiles/
+Testing/
+build/
+dist/
+web/cimbar_js.js
+web/cimbar_js.wasm
+CMakeCache.txt
+CMakeLists.txt.user
+CTestTestfile.cmake
+Makefile
+callgrind.out*
+cmake_install.cmake
