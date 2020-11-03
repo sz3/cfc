@@ -16,4 +16,16 @@
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
+    <Switch
+        android:id="@+id/color_switch"
+        android:layout_width="89dp"
+        android:layout_height="30dp"
+        android:checked="false"
+        android:switchTextAppearance="@style/TextAppearance.AppCompat.Medium"
+        android:textOff="@string/color_4"
+        android:textOn="@string/color_8"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/main_surface" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -15,7 +15,7 @@
 class MultiThreadedDecoder
 {
 public:
-	MultiThreadedDecoder(std::string data_path);
+	MultiThreadedDecoder(std::string data_path, int color_bits);
 
 	inline static clock_t bytes = 0;
 	inline static clock_t perfect = 0;
@@ -30,6 +30,7 @@ public:
 
 	void stop();
 
+	int color_bits() const;
 	unsigned num_threads() const;
 	unsigned backlog() const;
 	unsigned files_in_flight() const;
@@ -42,6 +43,7 @@ protected:
 	void save(const cv::Mat& img);
 
 protected:
+	int _colorBits;
 	Decoder _dec;
 	unsigned _numThreads;
 	turbo::thread_pool _pool;
@@ -49,11 +51,12 @@ protected:
 	std::string _dataPath;
 };
 
-inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path)
-	: _dec(cimbar::Config::ecc_bytes())
+inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path, int color_bits)
+	: _colorBits(color_bits)
+	, _dec(cimbar::Config::ecc_bytes(), _colorBits)
 	, _numThreads(std::max<int>(((int)std::thread::hardware_concurrency()/2), 1))
 	, _pool(_numThreads, 1)
-	, _writer(data_path, cimbar::Config::fountain_chunk_size(cimbar::Config::ecc_bytes()))
+	, _writer(data_path, cimbar::Config::fountain_chunk_size(cimbar::Config::ecc_bytes(), cimbar::Config::symbol_bits() + _colorBits))
 	, _dataPath(data_path)
 {
 	FountainInit::init();
@@ -126,6 +129,11 @@ inline void MultiThreadedDecoder::save(const cv::Mat& mat)
 inline void MultiThreadedDecoder::stop()
 {
 	_pool.stop();
+}
+
+inline int MultiThreadedDecoder::color_bits() const
+{
+	return _colorBits;
 }
 
 inline unsigned MultiThreadedDecoder::num_threads() const

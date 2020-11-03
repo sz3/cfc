@@ -109,8 +109,8 @@ namespace {
 	void drawDebugInfo(cv::Mat& mat)
 	{
 		std::stringstream sstop;
-		sstop << "cfc using " << _proc->num_threads() << " thread(s). " << _proc->backlog() << "? ";
-		sstop << (MultiThreadedDecoder::bytes / std::max<double>(1, MultiThreadedDecoder::decoded)) << "b v0.5c";
+		sstop << "cfc using " << _proc->num_threads() << " thread(s). " << _proc->color_bits() << "..." << _proc->backlog() << "? ";
+		sstop << (MultiThreadedDecoder::bytes / std::max<double>(1, MultiThreadedDecoder::decoded)) << "b v0.5c.1";
 		std::stringstream ssmid;
 		ssmid << "#: " << MultiThreadedDecoder::perfect << " / " << MultiThreadedDecoder::decoded << " / " << MultiThreadedDecoder::scanned << " / " << _calls;
 		std::stringstream ssperf;
@@ -148,18 +148,19 @@ namespace {
 
 extern "C" {
 jstring JNICALL
-Java_org_cimbar_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env, jobject instance, jlong matAddr, jstring dataPathObj)
+Java_org_cimbar_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env, jobject instance, jlong matAddr, jstring dataPathObj, jint colorBitsJ)
 {
 	++_calls;
 
-	// get Mat and path from raw address
+	// get params from raw address
 	Mat &mat = *(Mat *) matAddr;
 	string dataPath = jstring_to_cppstr(env, dataPathObj);
+	int colorBits = (int)colorBitsJ;
 
 	clock_t begin = clock();
 
-	if (!_proc)
-		_proc = std::make_shared<MultiThreadedDecoder>(dataPath);
+	if (!_proc or _proc->color_bits() != colorBits)
+		_proc = std::make_shared<MultiThreadedDecoder>(dataPath, colorBits);
 
 	cv::Mat img = mat.clone();
 	_proc->add(img);
@@ -173,7 +174,7 @@ Java_org_cimbar_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env, jobject
 
 	drawProgress(mat, _proc->get_progress());
 	drawGuidance(mat, _transferStatus);
-	//drawDebugInfo(mat);
+	drawDebugInfo(mat);
 
 	// log computation time to Android Logcat
 	double totalTime = double(clock() - begin) / CLOCKS_PER_SEC;

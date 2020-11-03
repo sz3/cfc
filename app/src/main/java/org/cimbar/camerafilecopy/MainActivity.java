@@ -11,6 +11,8 @@ import androidx.core.app.ActivityCompat;
 import android.util.Log;
 import android.view.SurfaceView;
 import android.view.WindowManager;
+import android.widget.CompoundButton;
+import android.widget.Switch;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 
@@ -33,6 +35,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     private static final int CREATE_FILE = 11;
 
     private CameraBridgeViewBase mOpenCvCameraView;
+    private Switch mColorSwitch;
+    private int colorBits = 2;
     private String dataPath;
     private String activePath;
 
@@ -73,6 +77,17 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         mOpenCvCameraView = findViewById(R.id.main_surface);
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
         mOpenCvCameraView.setCvCameraViewListener(this);
+
+        mColorSwitch = (Switch) findViewById(R.id.color_switch);
+        mColorSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    colorBits = 3;
+                } else {
+                    colorBits = 2;
+                }
+            }
+        });
     }
 
     @Override
@@ -132,7 +147,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         Mat mat = frame.rgba();
 
         // native call to process current camera frame
-        String res = processImageJNI(mat.getNativeObjAddr(), this.dataPath);
+        String res = processImageJNI(mat.getNativeObjAddr(), this.dataPath, this.colorBits);
 
         // res will contain a file path if we completed a transfer. Ask the user where to save it
         if (!res.isEmpty()) {
@@ -177,7 +192,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         }
     }
 
-    private native String processImageJNI(long mat, String path);
+    private native String processImageJNI(long mat, String path, int color_bits);
     private native void shutdownJNI();
 }
 

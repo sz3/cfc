@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">CameraFileCopy</string>
+    <string name="color_4">4 color</string>
+    <string name="color_8">8 color</string>
 </resources>
