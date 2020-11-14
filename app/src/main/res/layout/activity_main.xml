@@ -19,11 +19,10 @@
     <ToggleButton
         android:id="@+id/color_switch"
         android:layout_width="56dp"
-        android:layout_height="56dp"
+        android:layout_height="48dp"
+        android:background="@android:drawable/divider_horizontal_textfield"
+        android:button="@drawable/colselbg"
         android:checked="false"
-        android:rotation="270"
-        android:textOff="@string/color_4"
-        android:textOn="@string/color_8"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@+id/main_surface" />
 
