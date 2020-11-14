@@ -14,6 +14,8 @@ import android.view.WindowManager;
 import android.widget.CompoundButton;
 import android.widget.Switch;
 import android.widget.Toast;
+import android.widget.ToggleButton;
+
 import androidx.annotation.NonNull;
 
 import org.opencv.android.BaseLoaderCallback;
@@ -35,7 +37,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     private static final int CREATE_FILE = 11;
 
     private CameraBridgeViewBase mOpenCvCameraView;
-    private Switch mColorSwitch;
+    private ToggleButton mColorSwitch;
     private int colorBits = 2;
     private String dataPath;
     private String activePath;
@@ -78,7 +80,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
         mOpenCvCameraView.setCvCameraViewListener(this);
 
-        mColorSwitch = (Switch) findViewById(R.id.color_switch);
+        mColorSwitch = (ToggleButton) findViewById(R.id.color_switch);
         mColorSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
