@@ -1,44 +1,34 @@
 ### [INTRODUCTION](https://github.com/sz3/cimbar) | [ABOUT](https://github.com/sz3/cimbar/blob/master/ABOUT.md) | CFC | [LIBCIMBAR](https://github.com/sz3/libcimbar)
 
-## on cfc
+## CameraFileCopy
 
-This app is, essentially, a testbed for [libcimbar](https://github.com/sz3/libcimbar). It *can* and *does* allow one to receive files over the phone camera, but it is not a user-focused app, just a proof of the concept. The UI is nonexistent, and the only feedback given to the user is whether the onscreen numbers are increasing.
+This is an android app for receiving data over the camera as a one-way data channel. It does not use any antennas (wifi, bluetooth, nfc, ...) or other tricks. Notably, this means it works just as well in airplane mode.
 
-Nearly all the interesting logic is in libcimbar -- included via a git subtree. "cfc" does not do much on its own -- though, sometimes it feels as if doing *anything* nontrivial in an Android app is an accomplishment in and of itself.
+The app reads animated [cimbar codes](https://github.com/sz3/libcimbar). Nearly all the interesting logic is from libcimbar -- included via a git subtree.
 
-## how do I build?
+The *sender* component of cfc is a cimbar encoder -- such as https://cimbar.org. Navigate to that website (or use libcimbar's `cimbar_send` to generate barcodes natively), open a file to initialize the cimbar stream, and point the app+camera at the animated barcode.
 
-The $10,000 question of android development.
+## Release apks
 
-You need android studio, the android ndk, opencv for android, cmake, and probably some alcohol to make the process more palatable.
+Built apks are on the releases page: https://github.com/sz3/cfc/releases/tag/v0.5.3
 
-This repo was incredibly helpful for me when getting started:
+Only arm64-v8a is officially supported at the moment, because that is all I can test for.
+
+## Building
+
+1. Install android studio
+2. Install the android ndk
+3. Download [OpenCV for android](https://github.com/opencv/opencv/releases/download/4.5.0/opencv-4.5.0-android-sdk.zip)
+4. Create a project with this repo at the root
+5. update `gradle.properties` such that `opencvsdk` point to wherever you extracted the OpenCV Android SDK.
+
+I found this project incredibly useful for getting started:
 
 https://github.com/VlSomers/native-opencv-android-template
 
-... its instructions are better than anything I could write up. A godsend. 5 stars. Would build prototype app off this repo again.
-
-... short of that, I recommend perseverance, patience, prayer, and an occasional string of profanities directed at google and android. Usually one of those solves the problem. (probably the profanity)
-
 ## licensing, dependencies, etc
 
-The code in cfc, such as it is, is MIT licensed.
+The code in cfc, such as it is, is MIT licensed. It is mostly a blend of various tutorial apps + wrapper code around libcimbar.
 
 The libcimbar code is MPL 2.0. libcimbar's dependencies are a variety of MIT, BSD, zlib, boost, apache, ...
 
-## on camera apis
-
-* The app is built off the opencv tutorial apps, and includes a way to use the camera api (the default), or, if built to use `OpencvCamera2View`, the camera2 api. Unfortunately, the camera2 api wrapper code (borrowed from opencv) is very inefficient about pulling down preview images, and as a result has significant framerate problems.
-
-* cameraX is an option, but I lost patience trying to get it set up. It's also in "beta", and has been for years. So there is that dark cloud over its head...
-
-* there are some 3rd party android camera libraries I wanted to look into, but haven't made the time to yet. Might be reasonable?
-
-
-## on using the GPU for performance speedups
-
-* It is a good idea. Some of the lengthiest operations in a decode are the preprocessing step on the scan (adaptive threshold) and the extraction of the cimbar frame from the image (perspective transform). There is also an optional sharpening filter that can run pre-decode --currently disabled in cfc. These all see radical speedups when run on the GPU. So why are we not using the GPU?
-* libcimbar uses OpenCV. On Android, OpenCV uses openCL to run operations on the GPU, via its "TAPI". In C++, this is the cv::UMat class.
-	* copying data from a GPU UMat -> CPU Mat is slow enough that it negates all performance gains from using the GPU
-	* there is surely a way to avoid this bottleneck -- the cost is data synchonization between the GPU and CPU. There are various ways to make that happen in the background. But I'm not sure how in this case!
-* maybe some day.
