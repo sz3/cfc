@@ -15,8 +15,6 @@ using namespace std;
 
 TEST_CASE( "FountainStreamTest/testEncoder", "[unit]" )
 {
-	FountainInit::init();
-
 	stringstream input;
 	for (int i = 0; i < 1000; ++i)
 		input << "0123456789";
@@ -41,8 +39,6 @@ TEST_CASE( "FountainStreamTest/testEncoder", "[unit]" )
 
 TEST_CASE( "FountainStreamTest/testEncoder_BlockHeader", "[unit]" )
 {
-	FountainInit::init();
-
 	stringstream input;
 	for (int i = 0; i < 1000; ++i)
 		input << "0123456789";
@@ -80,10 +76,8 @@ TEST_CASE( "FountainStreamTest/testEncoder_BlockHeader", "[unit]" )
 	assertTrue( fes->good() );
 }
 
-TEST_CASE( "FountainStreamTest/testEncoder_Consistency", "[unit]" )
+TEST_CASE( "FountainStreamTest/testEncoder_DifferentBuffSizes", "[unit]" )
 {
-	FountainInit::init();
-
 	stringstream input;
 	for (int i = 0; i < 1000; ++i)
 		input << "0123456789";
@@ -118,10 +112,80 @@ TEST_CASE( "FountainStreamTest/testEncoder_Consistency", "[unit]" )
 	assertEquals( 15, fes2->block_count() );
 }
 
+
+TEST_CASE( "FountainStreamTest/testEncoder_Consistency", "[unit]" )
+{
+	stringstream input;
+	for (int i = 0; i < 100; ++i)
+		input << "0123456789";
+
+	fountain_encoder_stream::ptr fes = fountain_encoder_stream::create(input, 400);
+
+	stringstream full;
+	std::array<char, 400> buff;
+
+	unsigned res = fes->readsome(buff.data(), buff.size());
+	assertEquals( res, buff.size() );
+	full << string(buff.begin(), buff.end());
+
+	std::string expected = {0, 0, 0x03, (char)0xe8, 0, 0};
+	expected += input.str().substr(0, 394);
+
+	assertEquals( expected, full.str() );
+}
+
+TEST_CASE( "FountainStreamTest/testEncoder_ChangeBufferSize", "[unit]" )
+{
+	stringstream input;
+	for (int i = 0; i < 1000; ++i)
+		input << "0123456789";
+
+	fountain_encoder_stream::ptr fes = fountain_encoder_stream::create(input, 830);
+	assertEquals( 0, fes->block_count() );
+	assertEquals( 13, fes->blocks_required() );
+	assertTrue( fes->good() );
+
+	assertTrue( fes->reset_and_resize_buffer(600) );
+
+	// changes block params (and internal buffer size)
+	assertEquals( 0, fes->block_count() );
+	assertEquals( 17, fes->blocks_required() );
+	assertTrue( fes->good() );
+
+	std::array<char, 140> buff;
+	for (int i = 0; i < 1000; ++i)
+	{
+		unsigned res = fes->readsome(buff.data(), buff.size());
+		assertEquals( res, buff.size() );
+	}
+
+	assertEquals( 235, fes->block_count() );
+	assertEquals( 17, fes->blocks_required() );
+	assertTrue( fes->good() );
+}
+
+TEST_CASE( "FountainStreamTest/testEncoder_ChangeBufferSize_Fails", "[unit]" )
+{
+	stringstream input;
+	for (int i = 0; i < 100; ++i)
+		input << "0123456789";
+
+	fountain_encoder_stream::ptr fes = fountain_encoder_stream::create(input, 800);
+	assertEquals( 0, fes->block_count() );
+	assertEquals( 2, fes->blocks_required() );
+	assertTrue( fes->good() );
+
+	assertFalse( fes->reset_and_resize_buffer(1200) ); // larger than the buffer
+
+	// stream left unchanged
+	assertEquals( 0, fes->block_count() );
+	assertEquals( 2, fes->blocks_required() );
+	assertTrue( fes->good() );
+}
+
+
 TEST_CASE( "FountainStreamTest/testDecode", "[unit]" )
 {
-	FountainInit::init();
-
 	stringstream input;
 	for (int i = 0; i < 1000; ++i)
 		input << "0123456789";
@@ -164,8 +228,6 @@ TEST_CASE( "FountainStreamTest/testDecode", "[unit]" )
 
 TEST_CASE( "FountainStreamTest/testDecode_BigPackets", "[unit]" )
 {
-	FountainInit::init();
-
 	stringstream input;
 	for (int i = 0; i < 1000; ++i)
 		input << "0123456789";

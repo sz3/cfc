@@ -3,31 +3,34 @@
 
 #include "FountainInit.h"
 #include "wirehair/wirehair.h"
-#include <array>
 #include <cassert>
-#include <vector>
-#include <iostream>
-
-// will need to split large files
 
 class FountainEncoder
 {
-public:
-	static bool init()
+protected:
+	void swap(FountainEncoder& other) throw()
 	{
-		return FountainInit::init();
+		std::swap(_codec, other._codec);
+		std::swap(_packetSize, other._packetSize);
 	}
 
 public:
 	FountainEncoder(const uint8_t* data, size_t length, size_t packet_size)
-	    : _codec(wirehair_encoder_create(nullptr, data, length, packet_size))
-	    , _packetSize(packet_size)
+	    : _packetSize(packet_size)
 	{
+		FountainInit::init();
+		_codec = wirehair_encoder_create(nullptr, data, length, packet_size);
 	}
 
 	~FountainEncoder()
 	{
 		wirehair_free(_codec);
+	}
+
+	FountainEncoder& operator=(FountainEncoder temp)
+	{
+		temp.swap(*this);
+		return *this;
 	}
 
 	bool good() const
