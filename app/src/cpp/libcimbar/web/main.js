@@ -17,6 +17,8 @@ function importFile(f)
     dataOnHeap.set(imageData);
     Main.encode(f.name, dataOnHeap);
     Module._free(dataPtr);
+
+    Main.setHTML("current-file", f.name);
   };
   fileReader.onerror = () => {
     console.error('Unable to read file ' + f.name + '.');
@@ -78,6 +80,17 @@ return {
     }
   },
 
+  clickNav : function()
+  {
+    document.getElementById("nav-button").focus();
+  },
+
+  blurNav : function()
+  {
+    document.getElementById("nav-button").blur();
+    document.getElementById("nav-content").blur();
+  },
+
   clickFileInput : function()
   {
     document.getElementById("file_input").click();
@@ -89,6 +102,7 @@ return {
     var file = document.getElementById('file_input').files[0];
     if (file)
        importFile(file);
+    Main.blurNav();
   },
 
   nextFrame : function()
@@ -106,6 +120,23 @@ return {
     }
   },
 
+  setColorBits : function(color_bits)
+  {
+    Module._configure(color_bits);
+
+    var nav = document.getElementById("nav-container");
+    if (color_bits == 2) {
+      nav.classList.remove("c8");
+      nav.classList.add("c4");
+    } else if (color_bits >= 3) {
+      nav.classList.add("c8");
+      nav.classList.remove("c4");
+    } else {
+      nav.classList.remove("c4");
+      nav.classList.remove("c8");
+    }
+  },
+
   setHTML : function(id, msg)
   {
     document.getElementById(id).innerHTML = msg;
@@ -117,6 +148,81 @@ return {
   }
 };
 }();
+
+window.addEventListener('keydown', function(e) {
+  e = e || event;
+  if (e.target instanceof HTMLBodyElement) {
+    if (e.key == 'Enter' || e.keyCode == 13 ||
+        e.key == 'Tab' || e.keyCode == 9 ||
+        e.key == 'Space' || e.keyCode == 32
+    ) {
+      Main.clickNav();
+      e.preventDefault();
+    }
+  }
+  else {
+    if (e.key == 'Escape' || e.keyCode == 27 ||
+        e.key == 'Backspace' || e.keyCode == 8 ||
+        e.key == 'End' || e.keyCode == 35 ||
+        e.key == 'Home' || e.keyCode == 36
+    ) {
+      Main.blurNav();
+    }
+    else if (e.key == 'Tab' || e.keyCode == 9 ||
+             e.key == 'ArrowDown' || e.keyCode == 40
+    ) {
+      var nav = document.getElementById('nav-button');
+      var links = document.getElementById('nav-content').getElementsByTagName('a');
+      if (nav.classList.contains('attention')) {
+        nav.classList.remove('attention');
+        links[0].classList.add('attention');
+        return;
+      }
+      for (var i = 0; i < links.length; i++) {
+        if (links[i].classList.contains('attention')) {
+          var next = i+1 == links.length? nav : links[i+1];
+          links[i].classList.remove('attention');
+          next.classList.add('attention');
+          break;
+        }
+      }
+    }
+    else if (e.key == 'ArrowUp' || e.keyCode == 38)
+    {
+      var nav = document.getElementById('nav-button');
+      var links = document.getElementById('nav-content').getElementsByTagName('a');
+      if (nav.classList.contains('attention')) {
+        nav.classList.remove('attention');
+        links[links.length-1].classList.add('attention');
+        return;
+      }
+
+      for (var i = 0; i < links.length; i++) {
+        if (links[i].classList.contains('attention')) {
+          var next = i == 0? nav : links[i-1];
+          links[i].classList.remove('attention');
+          next.classList.add('attention');
+          break;
+        }
+      }
+    }
+    else if (e.key == 'Enter' || e.keyCode == 13 ||
+             e.key == ' ' || e.keyCode == 32
+    ) {
+      var nav = document.getElementById('nav-button');
+      if (nav.classList.contains('attention')) {
+        Main.blurNav();
+        return;
+      }
+      var links = document.getElementById('nav-content').getElementsByTagName('a');
+      for (var i = 0; i < links.length; i++) {
+        if (links[i].classList.contains('attention')) {
+          links[i].click();
+        }
+      }
+    }
+  }
+}, true);
 
 window.addEventListener("dragover", function(e) {
   e = e || event;
