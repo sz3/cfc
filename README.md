@@ -10,7 +10,7 @@ The *sender* component of cfc is a cimbar encoder -- such as https://cimbar.org.
 
 ## Release apks
 
-Built apks are on the releases page: https://github.com/sz3/cfc/releases/tag/v0.5.3
+Built apks are on the releases page: https://github.com/sz3/cfc/releases/
 
 Only arm64-v8a is officially supported at the moment, because that is all I can test for.
 
