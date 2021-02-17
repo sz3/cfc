@@ -17,10 +17,10 @@ public:
 	Decoder(int ecc_bytes=-1, int color_bits=-1, bool interleave=true);
 
 	template <typename MAT, typename STREAM>
-	unsigned decode(const MAT& img, STREAM& ostream, bool should_preprocess=false);
+	unsigned decode(const MAT& img, STREAM& ostream, bool should_preprocess=false, bool color_correction=true);
 
 	template <typename MAT, typename STREAM>
-	unsigned decode_fountain(const MAT& img, STREAM& ostream, bool should_preprocess=false);
+	unsigned decode_fountain(const MAT& img, STREAM& ostream, bool should_preprocess=false, bool color_correction=true);
 
 	unsigned decode(std::string filename, std::string output);
 
@@ -64,14 +64,28 @@ inline unsigned Decoder::do_decode(CimbReader& reader, STREAM& ostream)
 {
 	bitbuffer bb(_bitsPerOp * 1550);
 	std::vector<unsigned> interleaveLookup = Interleave::interleave_reverse(reader.num_reads(), _interleaveBlocks, _interleavePartitions);
+	std::array<PositionData, 12400> colorPositions; // 12400 = 1500 * 8, aka the number of cells. This should probably be determined at runtime
+
+	// read symbols first
 	while (!reader.done())
 	{
-		// reader should probably be in charge of the cell index (i) calculation
+		// reader is in charge of the cell index (i) calculation
 		// we can compute the bitindex ('index') here, but only the reader will know the right cell index...
-		unsigned bits = 0;
-		unsigned i = reader.read(bits);
-		unsigned bitPos = interleaveLookup[i] * _bitsPerOp;
+		PositionData pos;
+		unsigned bits = reader.read(pos);
+
+		unsigned bitPos = interleaveLookup[pos.i] * _bitsPerOp;
 		bb.write(bits, bitPos, _bitsPerOp);
+
+		colorPositions[pos.i] = {bitPos, pos.x, pos.y};
+	}
+
+	// then decode colors.
+	// the symbol+color decode could be done as one pass, but doing it as two gives us more control of the caches
+	for (const PositionData& p : colorPositions)
+	{
+		unsigned bits = reader.read_color(p);
+		bb.write(bits, p.i, _colorBits);
 	}
 
 	reed_solomon_stream rss(ostream, _eccBytes);
@@ -85,16 +99,16 @@ inline unsigned Decoder::do_decode(CimbReader& reader, STREAM& ostream)
 // which would either be a filestream, or a multi-channel fountain sink
 
 template <typename MAT, typename STREAM>
-inline unsigned Decoder::decode(const MAT& img, STREAM& ostream, bool should_preprocess)
+inline unsigned Decoder::decode(const MAT& img, STREAM& ostream, bool should_preprocess, bool color_correction)
 {
-	CimbReader reader(img, _decoder, should_preprocess);
+	CimbReader reader(img, _decoder, should_preprocess, color_correction);
 	return do_decode(reader, ostream);
 }
 
 template <typename MAT, typename FOUNTAINSTREAM>
-inline unsigned Decoder::decode_fountain(const MAT& img, FOUNTAINSTREAM& ostream, bool should_preprocess)
+inline unsigned Decoder::decode_fountain(const MAT& img, FOUNTAINSTREAM& ostream, bool should_preprocess, bool color_correction)
 {
-	CimbReader reader(img, _decoder, should_preprocess);
+	CimbReader reader(img, _decoder, should_preprocess, color_correction);
 
 	aligned_stream aligner(ostream, ostream.chunk_size());
 	return do_decode(reader, aligner);
