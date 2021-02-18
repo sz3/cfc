@@ -10,6 +10,7 @@
 #include <opencv2/core/ocl.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <memory>
+#include <mutex>
 #include <sstream>
 
 #define TAG "CameraFileCopyCPP"
@@ -19,6 +20,7 @@ using namespace cv;
 
 namespace {
 	std::shared_ptr<MultiThreadedDecoder> _proc;
+	std::mutex _mutex; // for _proc
 	std::set<std::string> _completed;
 
 	unsigned _calls = 0;
@@ -106,11 +108,11 @@ namespace {
 		}
 	}
 
-	void drawDebugInfo(cv::Mat& mat)
+	void drawDebugInfo(cv::Mat& mat, MultiThreadedDecoder& proc)
 	{
 		std::stringstream sstop;
-		sstop << "cfc using " << _proc->num_threads() << " thread(s). " << _proc->color_bits() << "..." << _proc->backlog() << "? ";
-		sstop << (MultiThreadedDecoder::bytes / std::max<double>(1, MultiThreadedDecoder::decoded)) << "b v0.5.4";
+		sstop << "cfc using " << proc.num_threads() << " thread(s). " << proc.color_bits() << "..." << proc.backlog() << "? ";
+		sstop << (MultiThreadedDecoder::bytes / std::max<double>(1, MultiThreadedDecoder::decoded)) << "b v0.5.6";
 		std::stringstream ssmid;
 		ssmid << "#: " << MultiThreadedDecoder::perfect << " / " << MultiThreadedDecoder::decoded << " / " << MultiThreadedDecoder::scanned << " / " << _calls;
 		std::stringstream ssperf;
@@ -118,7 +120,7 @@ namespace {
 		ssperf << ", extract: " << millis(MultiThreadedDecoder::extractTicks, MultiThreadedDecoder::decoded);
 		ssperf << ", decode: " << millis(MultiThreadedDecoder::decodeTicks, MultiThreadedDecoder::decoded);
 		std::stringstream sstats;
-		sstats << "Files received: " << _proc->files_decoded() << ", in flight: " << _proc->files_in_flight() << ". ";
+		sstats << "Files received: " << proc.files_decoded() << ", in flight: " << proc.files_in_flight() << ". ";
 		sstats << percent(MultiThreadedDecoder::perfect, MultiThreadedDecoder::decoded) << "% decode. ";
 		sstats << percent(MultiThreadedDecoder::decoded, MultiThreadedDecoder::scanned) << "% scan.";
 
@@ -157,24 +159,28 @@ Java_org_cimbar_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env, jobject
 	string dataPath = jstring_to_cppstr(env, dataPathObj);
 	int colorBits = (int)colorBitsJ;
 
+	std::shared_ptr<MultiThreadedDecoder> proc;
+	{
+		std::lock_guard<std::mutex> lock(_mutex);
+		if (!_proc or _proc->color_bits() != colorBits)
+			_proc = std::make_shared<MultiThreadedDecoder>(dataPath, colorBits);
+		proc = _proc;
+	}
+
 	clock_t begin = clock();
-
-	if (!_proc or _proc->color_bits() != colorBits)
-		_proc = std::make_shared<MultiThreadedDecoder>(dataPath, colorBits);
-
 	cv::Mat img = mat.clone();
-	_proc->add(img);
+	proc->add(img);
 
 	if (_calls & 32)
 	{
-		clock_t nextSnapshot = _proc->decoded;
+		clock_t nextSnapshot = proc->decoded;
 		_transferStatus = nextSnapshot > _transferSnapshotCalls; // decode in progress!
 		_transferSnapshotCalls = nextSnapshot;
 	}
 
-	drawProgress(mat, _proc->get_progress());
+	drawProgress(mat, proc->get_progress());
 	drawGuidance(mat, _transferStatus);
-	//drawDebugInfo(mat);
+	//drawDebugInfo(mat, *proc);
 
 	// log computation time to Android Logcat
 	double totalTime = double(clock() - begin) / CLOCKS_PER_SEC;
@@ -183,7 +189,7 @@ Java_org_cimbar_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env, jobject
 
 	// return a decoded file to prompt the user to save it, if there is a new one
 	string result;
-	std::vector<string> all_decodes = _proc->get_done();
+	std::vector<string> all_decodes = proc->get_done();
 	for (string& s : all_decodes)
 		if (_completed.find(s) == _completed.end())
 		{
@@ -196,6 +202,8 @@ Java_org_cimbar_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env, jobject
 void JNICALL
 Java_org_cimbar_camerafilecopy_MainActivity_shutdownJNI(JNIEnv *env, jobject instance) {
 	__android_log_print(ANDROID_LOG_INFO, TAG, "Shutdown cfc-cpp\n");
+
+	std::lock_guard<std::mutex> lock(_mutex);
 	if (_proc)
 		_proc->stop();
 	_proc = nullptr;
