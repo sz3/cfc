@@ -6,6 +6,16 @@ var _showStats = false;
 var _renders = 0;
 var _renderTime = 0;
 
+function toggleFullscreen()
+{
+  if (document.fullscreenElement) {
+    document.exitFullscreen();
+  }
+  else {
+    document.documentElement.requestFullscreen();
+  }
+}
+
 function importFile(f)
 {
   const fileReader = new FileReader();
@@ -33,9 +43,14 @@ return {
   {
     console.log("init for canvas " + canvas);
 
-    Module._initialize_GL(1024, 1024);
+    Module._initialize_GL(1040, 1040);
     Main.scaleCanvas(canvas, width, height);
     Main.alignInvisibleClick(canvas);
+  },
+
+  toggleFullscreen : function()
+  {
+    toggleFullscreen();
   },
 
   scaleCanvas : function(canvas, width, height)
@@ -45,8 +60,8 @@ return {
       dim = height;
     }
     console.log(dim);
-    if (dim > 1024) {
-      dim = 1024;
+    if (dim > 1040) {
+      dim = 1040;
     }
     canvas.style.width = dim + "px";
     canvas.style.height = dim + "px";
@@ -65,9 +80,10 @@ return {
   encode : function(filename, data)
   {
     console.log("encoding " + filename);
-    var res = Module._encode(data.byteOffset, data.length);
+    var res = Module._encode(data.byteOffset, data.length, -1);
     console.log(res);
     Main.setTitle(filename);
+    Main.setActive(true);
   },
 
   dragDrop : function(event)
@@ -109,21 +125,30 @@ return {
   nextFrame : function()
   {
     var start = performance.now();
-    var renderCount = Module._render();
+    Module._render();
+    var frameCount = Module._next_frame();
 
     var elapsed = performance.now() - start;
     var nextInterval = _interval>elapsed? _interval-elapsed : 0;
     setTimeout(Main.nextFrame, nextInterval);
 
-    if (_showStats && renderCount) {
+    if (_showStats && frameCount) {
       _renderTime += elapsed;
-      Main.setHTML( "status", elapsed + " : " + renderCount + " : " + Math.ceil(_renderTime/renderCount));
+      Main.setHTML( "status", elapsed + " : " + frameCount + " : " + Math.ceil(_renderTime/frameCount));
     }
+  },
+
+  setActive : function(active)
+  {
+    // hide cursor when there's a barcode active
+    var invisi = document.getElementById("invisible_click");
+    invisi.classList.remove("active");
+    invisi.classList.add("active");
   },
 
   setColorBits : function(color_bits)
   {
-    Module._configure(color_bits);
+    Module._configure(color_bits, 30, 6);
 
     var nav = document.getElementById("nav-container");
     if (color_bits == 2) {

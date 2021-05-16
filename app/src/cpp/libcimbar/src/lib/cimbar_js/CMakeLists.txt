@@ -3,7 +3,8 @@ cmake_minimum_required(VERSION 3.10)
 project(cimbar_js)
 
 set (SOURCES
-	wasm.cpp
+	cimbar_js.h
+	cimbar_js.cpp
 )
 
 if(DEFINED USE_WASM)
@@ -13,7 +14,7 @@ if(DEFINED USE_WASM)
 	)
 else()
 	add_library (
-		cimbar_js SHARED
+		cimbar_js STATIC
 		${SOURCES}
 	)
 endif()
@@ -47,7 +48,7 @@ set (LINK_WASM_LIST
 	-s USE_GLFW=3
 	-s FILESYSTEM=0
 	-s TOTAL_MEMORY=134217728
-	-s EXPORTED_FUNCTIONS='["_render","_initialize_GL","_encode","_configure"]'
+	-s EXPORTED_FUNCTIONS='["_render","_next_frame","_initialize_GL","_encode","_configure"]'
 )
 string(REPLACE ";" " " LINK_WASM_FLAGS "${LINK_WASM_LIST}")
 
@@ -66,5 +67,8 @@ if(DEFINED USE_WASM)
 	endif()
 
 else()  # if no wasm, ignore all that and add in GLFW libraries
-	target_link_libraries(cimbar_js ${libcimbar_UI_LIB})
+	target_link_libraries(cimbar_js
+		GL
+		glfw
+	)
 endif()

@@ -1,20 +1,33 @@
 /* This code is subject to the terms of the Mozilla Public License, v.2.0. http://mozilla.org/MPL/2.0/. */
+#include "cimbar_js/cimbar_js.h"
+
 #include "cimb_translator/Config.h"
-#include "encoder/Encoder.h"
-#include "fountain/FountainInit.h"
-#include "gui/shaky_cam.h"
-#include "gui/window.h"
 #include "serialize/str.h"
-#include "util/loop_iterator.h"
+#include "util/File.h"
 
 #include "cxxopts/cxxopts.hpp"
 
-#include <functional>
+#include <chrono>
 #include <iostream>
 #include <string>
+#include <thread>
 #include <vector>
 using std::string;
 using std::vector;
+
+namespace {
+
+	template <typename TP>
+	TP wait_for_frame_time(unsigned delay, const TP& start)
+	{
+		unsigned millis = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
+		if (delay > millis)
+			std::this_thread::sleep_for(std::chrono::milliseconds(delay-millis));
+		return std::chrono::high_resolution_clock::now();
+	}
+
+}
+
 
 int main(int argc, char** argv)
 {
@@ -29,8 +42,6 @@ int main(int argc, char** argv)
 	    ("c,colorbits", "Color bits. [0-3]", cxxopts::value<int>()->default_value(turbo::str::str(colorBits)))
 	    ("e,ecc", "ECC level", cxxopts::value<unsigned>()->default_value(turbo::str::str(ecc)))
 	    ("f,fps", "Target FPS", cxxopts::value<unsigned>()->default_value(turbo::str::str(defaultFps)))
-	    ("r,rotatecam", "Successive images are rotated 90 degrees", cxxopts::value<bool>())
-	    ("s,shakycam", "Successive images are offset, like a shaky camera effect", cxxopts::value<bool>())
 	    ("z,compression", "Compression level. 0 == no compression.", cxxopts::value<int>()->default_value(turbo::str::str(compressionLevel)))
 	    ("h,help", "Print usage")
 	;
@@ -55,42 +66,47 @@ int main(int argc, char** argv)
 		fps = defaultFps;
 	unsigned delay = 1000 / fps;
 
-	bool dark = true;
-	bool use_rotatecam = result.count("rotatecam");
-	bool use_shakycam = result.count("shakycam");
-
-	cimbar::shaky_cam cam(cimbar::Config::image_size(), 1080, 1080, dark);
-	// if we don't need the shakycam, we'll just turn it off
-	// we could use a separate code path (just do a mat copyTo),
-	// but this is fine.
-	if (!use_shakycam)
-		cam.toggle();
-
-	cimbar::window w(cam.width(), cam.height(), "cimbar_send");
-	if (!w.is_good())
+	int window_size = 1080;
+	if (!initialize_GL(window_size, window_size))
 	{
 		std::cerr << "failed to create window :(" << std::endl;
 		return 50;
 	}
 
-	bool running = true;
-	bool start = true;
+	configure(colorBits, ecc, compressionLevel);
 
-	auto draw = [&w, &cam, use_rotatecam, delay, &running, &start] (const cv::Mat& frame, unsigned) {
-		if (!start and w.should_close())
-			return running = false;
-		start = false;
+	std::chrono::time_point start = std::chrono::high_resolution_clock::now();
+	while (true)
+		for (unsigned i = 0; i < infiles.size(); ++i)
+		{
+			// delay, then try to read file
+			start = wait_for_frame_time(delay, start);
+			// TODO: maybe delay is the wrong thing to do here. Might be best to just kick out any files that fail to read?
+			// we can then error out properly if all inputs are bad, which would be nice.
+			{
+				string contents = File(infiles[i]).read_all();
+				if (contents.empty())
+				{
+					std::cerr << "failed to read file " << infiles[i] << std::endl;
+					continue;
+				}
 
-		cv::Mat& windowImg = cam.draw(frame);
-		w.show(windowImg, delay);
-		if (use_rotatecam)
-			w.rotate();
-		return true;
-	};
+				if (!encode(reinterpret_cast<unsigned char*>(contents.data()), contents.size(), static_cast<int>(i)))
+				{
+					std::cerr << "failed to encode file " << infiles[i] << std::endl;
+					continue;
+				}
+			}
 
-	Encoder en(ecc, cimbar::Config::symbol_bits(), colorBits);
-	while (running)
-		for (const string& f : infiles)
-			en.encode_fountain(f, draw, compressionLevel);
-	return 0;
+			// after loading our current file, render frames to the screen until next_frame() loops
+			int frameCount = 0;
+			do {
+				start = wait_for_frame_time(delay, start);
+				if (render() < 0)
+					return 0;
+			}
+			while (++frameCount == next_frame()); // when next_frame() finally loops, we roll to the next file
+		}
+
+	return 0; // should never reach here
 }

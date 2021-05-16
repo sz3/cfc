@@ -15,17 +15,11 @@ if(NOT DEFINED CPPFILESYSTEM)
 	set(CPPFILESYSTEM "stdc++fs")
 endif()
 
-if(DEFINED USE_GLFW)
-	set(libcimbar_UI_LIB "glfw" "GL")
-	add_definitions("-DLIBCIMBAR_USE_GLFW=${USE_GLFW}")
-else()
-	set(libcimbar_UI_LIB "opencv_highgui")
-endif()
-
 set (PROJECTS
 	src/lib/bit_file
 	src/lib/chromatic_adaptation
 	src/lib/cimb_translator
+	src/lib/cimbar_js
 	src/lib/compression
 	src/lib/encoder
 	src/lib/fountain
@@ -47,13 +41,6 @@ if(NOT DEFINED USE_WASM)
 set(PROJECTS
 	${PROJECTS}
 	src/lib/extractor
-)
-endif()
-
-if (DEFINED USE_WASM OR USE_GLFW)
-set(PROJECTS
-	${PROJECTS}
-	src/wasm/cimbar_js
 )
 endif()
 
