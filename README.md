@@ -5,7 +5,11 @@
 
 Behold: an experimental barcode format for air-gapped data transfer.
 
-It can sustain speeds of 770+ kilobits/s (~96 KB/s) using nothing but a smartphone camera!
+It can sustain speeds of 943+ kilobits/s (~118 KB/s) using just a computer monitor and a smartphone camera!
+
+<p align="center">
+<img src="https://github.com/sz3/cimbar-samples/blob/v0.5/6bit/4cecc30f.png" width="70%" title="A non-animated cimbar code" >
+</p>
 
 ## Explain?
 
@@ -21,17 +25,21 @@ No internet/bluetooth/NFC/etc is used. All data is transmitted through the camer
 
 `cimbar` is a high-density 2D barcode format. Data is stored in a grid of colored tiles -- bits are encoded based on which tile is chosen, and which color is chosen to draw the tile. Reed Solomon error correction is applied on the data, to account for the lossy nature of the video -> digital decoding. Sub-1% error rates are expected, and corrected.
 
-`libcimbar`, this optimized implementation, includes a simple protocol for file encoding based on fountain codes (`wirehair`). Files of up to 33MB can be encoded in a series of cimbar codes, which can be output as images or a live video feed. Once enough distinct image frames have been decoded successfully, the file will be reconstructed successfully. This is true even if the images are received out of order, or if some have been corrupted or are missing.
+`libcimbar`, this optimized implementation, includes a simple protocol for file encoding built on fountain codes (`wirehair`) and zstd compression. Files of up to 33MB (after compression!) are encoded in a series of cimbar codes, which can be output as images or a live video feed. Once enough distinct image frames have been decoded successfully, the file will be reconstructed and decompressed successfully. This is true even if the images are received out of order, or if some have been corrupted or are missing.
 
 ## Platforms
 
-The code is written in C++, and developed/tested on amd64+linux, arm64+android, and emscripten+wasm. It probably works, or can be made to work, on other platforms.
+The code is written in C++, and developed/tested on amd64+linux, arm64+android (decoder only), and emscripten+WASM (encoder only). It probably works, or can be made to work, on other platforms.
+
+Crucially, because the encoder compiles to asmjs and wasm, it can run on anything with a modern web browser. There are [releases](https://github.com/sz3/libcimbar/releases/latest) if you wish to run the encoder locally instead of via cimbar.org.
 
 ## Library dependencies
 
-[OpenCV](https://opencv.org/) must be installed before building. All other dependencies are included in the source tree.
+[OpenCV](https://opencv.org/) and [GLFW](https://github.com/glfw/glfw) (+ OpenGL ES headers) must be installed before building. All other dependencies are included in the source tree.
 
-* opencv - https://opencv.org/
+* opencv - https://opencv.org/ (`libopencv-dev`)
+* GLFW - https://github.com/glfw/glfw (`libglfw3-dev`)
+* GLES3/gl3.h - `libgles2-mesa-dev`
 * base - https://github.com/r-lyeh-archived/base
 * catch2 - https://github.com/catchorg/Catch2
 * concurrentqueue - https://github.com/cameron314/concurrentqueue
@@ -45,12 +53,14 @@ The code is written in C++, and developed/tested on amd64+linux, arm64+android, 
 * wirehair - https://github.com/catid/wirehair
 * zstd - https://github.com/facebook/zstd
 
-Optional:
-* GLFW - https://github.com/glfw/glfw or `libglfw3-dev` (for when `opencv-highgui` is not available or unwanted)
-    * the GLFW code path also needs/uses `GLES3/gl3.h` (`libgles2-mesa-dev` on ubuntu 18.04)
-
 ## Build
 
+1. install opencv and GLFW. On ubuntu/debian, this looks like:
+```
+sudo apt install libopencv-dev libglfw3-dev libgles2-mesa-dev
+```
+
+2. run the cmake + make incantation
 ```
 cmake .
 make -j7
@@ -59,7 +69,7 @@ make install
 
 By default, libcimbar will try to install build products under `./dist/bin/`.
 
-To build the emscripten+WASM encoder (what cimbar.org uses), see [WASM](WASM.md).
+To build cimbar.js (what cimbar.org uses), see [WASM](WASM.md).
 
 ## Usage
 
@@ -79,6 +89,8 @@ Encode and animate to window:
 ```
 ./cimbar_send inputfile.pdf
 ```
+
+You can also encode a file using [cimbar.org](https://cimbar.org), or the latest [release](https://github.com/sz3/libcimbar/releases/latest).
 
 ## Performance numbers
 
