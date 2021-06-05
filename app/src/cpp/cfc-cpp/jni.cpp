@@ -60,23 +60,30 @@ namespace {
 		if (mat.rows > mat.cols)
 			yextra = (mat.rows - mat.cols) >> 1;
 
-		int tlx = guideOffset + xextra;
-		int tly = guideOffset + yextra;
-		int outlinex = tlx - outlineOffset;
-		int outliney = tly - outlineOffset;
-		cv::line(mat, cv::Point(tlx, outliney), cv::Point(tlx + guideLength, outliney), outline, outlineWidth);
-		cv::line(mat, cv::Point(outlinex, guideOffset), cv::Point(outlinex, tly + guideLength), outline, outlineWidth);
-		cv::line(mat, cv::Point(tlx, guideOffset), cv::Point(tlx + guideLength, tly), color, guideWidth);
-		cv::line(mat, cv::Point(tlx, guideOffset), cv::Point(tlx, tly + guideLength), color, guideWidth);
+		int lx = guideOffset + xextra;
+		int ty = guideOffset + yextra;
+		int outlinex = lx - outlineOffset;
+		int outliney = ty - outlineOffset;
+		cv::line(mat, cv::Point(lx, outliney), cv::Point(lx + guideLength, outliney), outline, outlineWidth);
+		cv::line(mat, cv::Point(outlinex, guideOffset), cv::Point(outlinex, ty + guideLength), outline, outlineWidth);
+		cv::line(mat, cv::Point(lx, guideOffset), cv::Point(lx + guideLength, ty), color, guideWidth);
+		cv::line(mat, cv::Point(lx, guideOffset), cv::Point(lx, ty + guideLength), color, guideWidth);
 
-		int brx = mat.cols - guideOffset - guideWidth - xextra;
-		int bry = mat.rows - guideOffset - guideWidth - yextra;
-		outlinex = brx - outlineOffset;
-		outliney = bry - outlineOffset;
-		cv::line(mat, cv::Point(brx, outliney), cv::Point(brx - guideLength, outliney), outline, outlineWidth);
-		cv::line(mat, cv::Point(outlinex, bry), cv::Point(outlinex, bry - guideLength), outline, outlineWidth);
-		cv::line(mat, cv::Point(brx, bry), cv::Point(brx - guideLength, bry), color, guideWidth);
-		cv::line(mat, cv::Point(brx, bry), cv::Point(brx, bry - guideLength), color, guideWidth);
+		int rx = mat.cols - guideOffset - guideWidth - xextra;
+		outlinex = rx + outlineOffset;
+		outliney = ty - outlineOffset;
+		cv::line(mat, cv::Point(rx, outliney), cv::Point(rx - guideLength, outliney), outline, outlineWidth);
+		cv::line(mat, cv::Point(outlinex, guideOffset), cv::Point(outlinex, ty + guideLength), outline, outlineWidth);
+		cv::line(mat, cv::Point(rx, guideOffset), cv::Point(rx - guideLength, ty), color, guideWidth);
+		cv::line(mat, cv::Point(rx, guideOffset), cv::Point(rx, ty + guideLength), color, guideWidth);
+
+		int by = mat.rows - guideOffset - guideWidth - yextra;
+		outlinex = lx - outlineOffset;
+		outliney = by + outlineOffset;
+		cv::line(mat, cv::Point(lx, outliney), cv::Point(lx + guideLength, outliney), outline, outlineWidth);
+		cv::line(mat, cv::Point(outlinex, by), cv::Point(outlinex, by - guideLength), outline, outlineWidth);
+		cv::line(mat, cv::Point(lx, by), cv::Point(lx + guideLength, by), color, guideWidth);
+		cv::line(mat, cv::Point(lx, by), cv::Point(lx, by - guideLength), color, guideWidth);
 	}
 
 	void drawProgress(cv::Mat& mat, const std::vector<double>& progress)
