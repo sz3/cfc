@@ -18,9 +18,8 @@
 
     <ToggleButton
         android:id="@+id/color_switch"
-        android:padding="10dp"
-        android:layout_width="36dp"
-        android:layout_height="56dp"
+        android:layout_width="44dp"
+        android:layout_height="54dp"
         android:background="@android:drawable/divider_horizontal_textfield"
         android:button="@drawable/colselbg"
         android:checked="false"

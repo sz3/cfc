@@ -93,7 +93,7 @@ namespace {
 
 		int minsz = std::min(mat.cols, mat.rows);
 		int fillWidth = minsz >> 7;
-		int outlineWidth = fillWidth + (minsz >> 8);
+		int outlineWidth = fillWidth + (minsz >> 8) + 1;
 
 		int barLength = (minsz >> 1) + (minsz >> 2);
 		int barOffsetW = (minsz - barLength) >> 3;
