@@ -8,22 +8,22 @@
     tools:context=".MainActivity">
 
     <org.cimbar.camerafilecopy.OpencvCameraView
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
-            android:id="@+id/main_surface"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+        android:id="@+id/main_surface"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <ToggleButton
         android:id="@+id/color_switch"
-        android:layout_width="56dp"
-        android:layout_height="48dp"
+        android:layout_width="44dp"
+        android:layout_height="54dp"
         android:background="@android:drawable/divider_horizontal_textfield"
         android:button="@drawable/colselbg"
         android:checked="false"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/main_surface" />
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
