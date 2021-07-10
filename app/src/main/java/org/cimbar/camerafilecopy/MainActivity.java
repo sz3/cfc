@@ -108,6 +108,12 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     }
 
     @Override
+    public void onStart() {
+        super.onStart();
+        Toast.makeText(this, "Encode data at https://cimbar.org! :)",  Toast.LENGTH_LONG).show();
+    }
+
+    @Override
     public void onPause() {
         shutdownJNI();
         super.onPause();
@@ -125,8 +131,6 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
             Log.d(TAG, "OpenCV library found inside package. Using it!");
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
-
-        Toast.makeText(this, "Encode data at https://cimbar.org! :)",  Toast.LENGTH_LONG).show();
     }
 
     @Override
