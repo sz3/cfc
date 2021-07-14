@@ -10,7 +10,9 @@ The *sender* component of cfc is a cimbar encoder -- such as https://cimbar.org.
 
 ## Release apks
 
-Built apks are on the releases page: https://github.com/sz3/cfc/releases/
+CFC is available in the Google Play Store: https://play.google.com/store/apps/details?id=org.cimbar.camerafilecopy
+
+Release apks are also available here: https://github.com/sz3/cfc/releases/
 
 Only arm64-v8a is officially supported at the moment, because that is all I can test for.
 
