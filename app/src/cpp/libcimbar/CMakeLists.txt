@@ -8,7 +8,7 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 
 if(NOT DEFINED OPENCV_LIBS)
-	set(OPENCV_LIBS "opencv_calib3d" "opencv_imgcodecs" "opencv_imgproc" "opencv_photo" "opencv_core")
+	set(OPENCV_LIBS "opencv_imgcodecs" "opencv_imgproc" "opencv_photo" "opencv_core")
 endif()
 
 if(NOT DEFINED CPPFILESYSTEM)
