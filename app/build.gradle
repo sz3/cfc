@@ -1,14 +1,15 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 29
+    compileSdkVersion 32
     buildToolsVersion "29.0.3"
+    ndkVersion "22.1.7171670"
     defaultConfig {
         applicationId "org.cimbar.camerafilecopy"
         minSdkVersion 21
-        targetSdkVersion 29
-        versionCode 4
-        versionName "0.5.9"
+        targetSdkVersion 32
+        versionCode 6
+        versionName "0.5.10"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
