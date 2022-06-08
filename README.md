@@ -10,7 +10,12 @@ The *sender* component of cfc is a cimbar encoder -- such as https://cimbar.org.
 
 ## Release apks
 
-CFC is available in the Google Play Store: https://play.google.com/store/apps/details?id=org.cimbar.camerafilecopy
+[<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
+     alt="Get it on F-Droid"
+     height="80">](https://f-droid.org/packages/org.cimbar.camerafilecopy/)
+[<img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png"
+     alt="Get it on Google Play"
+     height="80">](https://play.google.com/store/apps/details?id=org.cimbar.camerafilecopy)
 
 Release apks are also available here: https://github.com/sz3/cfc/releases/
 
