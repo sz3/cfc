@@ -25,6 +25,7 @@ subprojects {
     afterEvaluate {
             configure(android.lintOptions) {
                 abortOnError false
+                checkReleaseBuilds false
             }
     }
 }
