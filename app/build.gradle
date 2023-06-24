@@ -8,8 +8,8 @@ android {
         applicationId "org.cimbar.camerafilecopy"
         minSdkVersion 21
         targetSdkVersion 33
-        versionCode 8
-        versionName "0.5.12+a"
+        versionCode 9
+        versionName "0.5.13"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
