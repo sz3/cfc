@@ -123,8 +123,8 @@ namespace {
 	void drawDebugInfo(cv::Mat& mat, MultiThreadedDecoder& proc)
 	{
 		std::stringstream sstop;
-		sstop << "cfc using " << proc.num_threads() << " thread(s). " << proc.color_bits() << "..." << proc.backlog() << "? ";
-		sstop << (MultiThreadedDecoder::bytes / std::max<double>(1, MultiThreadedDecoder::decoded)) << "b v0.5.15";
+		sstop << "cfc using " << proc.num_threads() << " thread(s). " << proc.legacy_mode() << "..." << proc.backlog() << "? ";
+		sstop << (MultiThreadedDecoder::bytes / std::max<double>(1, MultiThreadedDecoder::decoded)) << "b v0.6.0";
 		std::stringstream ssmid;
 		ssmid << "#: " << MultiThreadedDecoder::perfect << " / " << MultiThreadedDecoder::decoded << " / " << MultiThreadedDecoder::scanned << " / " << _calls;
 		std::stringstream ssperf;
@@ -162,20 +162,21 @@ namespace {
 
 extern "C" {
 jstring JNICALL
-Java_org_cimbar_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env, jobject instance, jlong matAddr, jstring dataPathObj, jint colorBitsJ)
+Java_org_cimbar_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env, jobject instance, jlong matAddr, jstring dataPathObj, jint modeInt)
 {
 	++_calls;
 
 	// get params from raw address
 	Mat &mat = *(Mat *) matAddr;
 	string dataPath = jstring_to_cppstr(env, dataPathObj);
-	int colorBits = (int)colorBitsJ;
+	int modeVal = (int)modeInt;
+	bool legacyMode = modeVal <= 8; // current scheme: old 4c = 4, old 8c = 8, new = bigger number
 
 	std::shared_ptr<MultiThreadedDecoder> proc;
 	{
 		std::lock_guard<std::mutex> lock(_mutex);
-		if (!_proc or _proc->color_bits() != colorBits)
-			_proc = std::make_shared<MultiThreadedDecoder>(dataPath, colorBits);
+		if (!_proc or _proc->legacy_mode() != legacyMode)
+			_proc = std::make_shared<MultiThreadedDecoder>(dataPath, legacyMode);
 		proc = _proc;
 	}
 

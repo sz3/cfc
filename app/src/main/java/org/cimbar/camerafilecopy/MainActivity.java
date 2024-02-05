@@ -38,7 +38,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 
     private CameraBridgeViewBase mOpenCvCameraView;
     private ToggleButton mColorSwitch;
-    private int colorBits = 2;
+    private int modeVal = 4;
     private String dataPath;
     private String activePath;
 
@@ -84,9 +84,9 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         mColorSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
-                    colorBits = 3;
+                    modeVal = 68;
                 } else {
-                    colorBits = 2;
+                    modeVal = 4;
                 }
             }
         });
@@ -155,7 +155,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         Mat mat = frame.rgba();
 
         // native call to process current camera frame
-        String res = processImageJNI(mat.getNativeObjAddr(), this.dataPath, this.colorBits);
+        String res = processImageJNI(mat.getNativeObjAddr(), this.dataPath, this.modeVal);
 
         // res will contain a file path if we completed a transfer. Ask the user where to save it
         if (!res.isEmpty()) {
