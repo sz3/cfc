@@ -24,8 +24,9 @@ namespace {
 	std::set<std::string> _completed;
 
 	unsigned _calls = 0;
-	bool _transferStatus = false;
-	clock_t _transferSnapshotCalls = 0;
+	int _transferStatus = 0;
+	clock_t _frameDecodeSnapshot = 0;
+	clock_t _frameSuccessSnapshot = 0;
 
 	unsigned millis(unsigned num, unsigned denom)
 	{
@@ -41,7 +42,7 @@ namespace {
 		return (num * 100) / denom;
 	}
 
-	void drawGuidance(cv::Mat& mat, bool in_progress)
+	void drawGuidance(cv::Mat& mat, int in_progress)
 	{
 		int minsz = std::min(mat.cols, mat.rows);
 		int guideWidth = minsz >> 7;
@@ -50,7 +51,11 @@ namespace {
 		int guideOffset = minsz >> 5;
 		int outlineOffset = (outlineWidth - guideWidth) >> 1;
 
-		cv::Scalar color = in_progress? cv::Scalar(0,255,0) : cv::Scalar(255,255,255);
+		cv::Scalar color = cv::Scalar(255,255,255);
+		if (in_progress == 1)
+			color = cv::Scalar(255,100,100);
+		else if (in_progress == 2)
+			color = cv::Scalar(0,255,0);
 		cv::Scalar outline = cv::Scalar(0,0,0);
 
 		int xextra = 0;
@@ -119,7 +124,7 @@ namespace {
 	{
 		std::stringstream sstop;
 		sstop << "cfc using " << proc.num_threads() << " thread(s). " << proc.color_bits() << "..." << proc.backlog() << "? ";
-		sstop << (MultiThreadedDecoder::bytes / std::max<double>(1, MultiThreadedDecoder::decoded)) << "b v0.5.14";
+		sstop << (MultiThreadedDecoder::bytes / std::max<double>(1, MultiThreadedDecoder::decoded)) << "b v0.5.15";
 		std::stringstream ssmid;
 		ssmid << "#: " << MultiThreadedDecoder::perfect << " / " << MultiThreadedDecoder::decoded << " / " << MultiThreadedDecoder::scanned << " / " << _calls;
 		std::stringstream ssperf;
@@ -180,9 +185,12 @@ Java_org_cimbar_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env, jobject
 
 	if (_calls & 32)
 	{
-		clock_t nextSnapshot = proc->decoded;
-		_transferStatus = nextSnapshot > _transferSnapshotCalls; // decode in progress!
-		_transferSnapshotCalls = nextSnapshot;
+		clock_t decodeSnapshot = proc->decoded;
+		clock_t perfectSnapshot = proc->perfect;
+		_transferStatus = perfectSnapshot > _frameSuccessSnapshot; // a bit silly, but 1 == partial decode
+		_transferStatus += (decodeSnapshot > _frameDecodeSnapshot); // 2 == full decode
+		_frameDecodeSnapshot = decodeSnapshot;
+		_frameSuccessSnapshot = perfectSnapshot;
 	}
 
 	drawProgress(mat, proc->get_progress());
