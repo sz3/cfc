@@ -37,8 +37,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     private static final int CREATE_FILE = 11;
 
     private CameraBridgeViewBase mOpenCvCameraView;
-    private ToggleButton mColorSwitch;
-    private int modeVal = 4;
+    private ToggleButton mModeSwitch;
+    private int modeVal = 68;
     private String dataPath;
     private String activePath;
 
@@ -80,13 +80,13 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
         mOpenCvCameraView.setCvCameraViewListener(this);
 
-        mColorSwitch = (ToggleButton) findViewById(R.id.color_switch);
-        mColorSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        mModeSwitch = (ToggleButton) findViewById(R.id.mode_switch);
+        mModeSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
-                    modeVal = 68;
-                } else {
                     modeVal = 4;
+                } else {
+                    modeVal = 68;
                 }
             }
         });
@@ -200,7 +200,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         }
     }
 
-    private native String processImageJNI(long mat, String path, int color_bits);
+    private native String processImageJNI(long mat, String path, int modeInt);
     private native void shutdownJNI();
 }
 

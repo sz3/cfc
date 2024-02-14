@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <item android:state_checked="false"
-        android:drawable="@drawable/ic_color4"/>
-
     <item android:state_checked="true"
-        android:drawable="@drawable/ic_color8"/>
+        android:drawable="@drawable/ic_mode4c"/>
+
+    <item android:state_checked="false"
+        android:drawable="@drawable/ic_modeb"/>
 
 </selector>
