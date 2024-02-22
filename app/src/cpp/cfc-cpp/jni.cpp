@@ -53,7 +53,7 @@ namespace {
 
 		cv::Scalar color = cv::Scalar(255,255,255);
 		if (in_progress == 1)
-			color = cv::Scalar(255,100,100);
+			color = cv::Scalar(255,244,94); // 0,191,255
 		else if (in_progress == 2)
 			color = cv::Scalar(0,255,0);
 		cv::Scalar outline = cv::Scalar(0,0,0);
