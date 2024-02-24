@@ -96,7 +96,8 @@ inline bool MultiThreadedDecoder::add(cv::Mat mat)
 		// if extracted image is small, we'll need to run some filters on it
 		clock_t begin = clock();
 		bool should_preprocess = (res == Extractor::NEEDS_SHARPEN);
-		unsigned decodeRes = _dec.decode_fountain(img, _writer, should_preprocess);
+		int color_correction = _legacyMode? 1 : 2;
+		unsigned decodeRes = _dec.decode_fountain(img, _writer, should_preprocess, color_correction);
 		bytes += decodeRes;
 		++decoded;
 		decodeTicks += clock() - begin;
