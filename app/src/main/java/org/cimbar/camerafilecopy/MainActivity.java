@@ -38,7 +38,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 
     private CameraBridgeViewBase mOpenCvCameraView;
     private ToggleButton mModeSwitch;
-    private int modeVal = 68;
+    private int modeVal = 4;
     private String dataPath;
     private String activePath;
 

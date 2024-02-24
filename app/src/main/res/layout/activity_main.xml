@@ -22,7 +22,7 @@
         android:layout_height="54dp"
         android:background="@android:drawable/divider_horizontal_textfield"
         android:button="@drawable/modesel"
-        android:checked="false"
+        android:checked="true"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
