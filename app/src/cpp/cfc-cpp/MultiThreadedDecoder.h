@@ -15,7 +15,7 @@
 class MultiThreadedDecoder
 {
 public:
-	MultiThreadedDecoder(std::string data_path, int color_bits);
+	MultiThreadedDecoder(std::string data_path, bool legacy_mode);
 
 	inline static clock_t bytes = 0;
 	inline static clock_t perfect = 0;
@@ -26,11 +26,10 @@ public:
 	inline static clock_t extractTicks = 0;
 
 	bool add(cv::Mat mat);
-	bool decode(const cv::Mat& img, bool should_preprocess);
 
 	void stop();
 
-	int color_bits() const;
+	bool legacy_mode() const;
 	unsigned num_threads() const;
 	unsigned backlog() const;
 	unsigned files_in_flight() const;
@@ -43,7 +42,7 @@ protected:
 	void save(const cv::Mat& img);
 
 protected:
-	int _colorBits;
+	bool _legacyMode;
 	Decoder _dec;
 	unsigned _numThreads;
 	turbo::thread_pool _pool;
@@ -51,12 +50,12 @@ protected:
 	std::string _dataPath;
 };
 
-inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path, int color_bits)
-	: _colorBits(color_bits)
-	, _dec(cimbar::Config::ecc_bytes(), _colorBits)
+inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path, bool legacy_mode)
+	: _legacyMode(legacy_mode)
+	, _dec(cimbar::Config::ecc_bytes(), cimbar::Config::color_bits(), legacy_mode? 0 : 1, legacy_mode)
 	, _numThreads(std::max<int>(((int)std::thread::hardware_concurrency()/2), 1))
 	, _pool(_numThreads, 1)
-	, _writer(data_path, cimbar::Config::fountain_chunk_size(cimbar::Config::ecc_bytes(), cimbar::Config::symbol_bits() + _colorBits))
+	, _writer(data_path, cimbar::Config::fountain_chunk_size(cimbar::Config::ecc_bytes(), cimbar::Config::symbol_bits() + cimbar::Config::color_bits(), legacy_mode))
 	, _dataPath(data_path)
 {
 	FountainInit::init();
@@ -97,23 +96,14 @@ inline bool MultiThreadedDecoder::add(cv::Mat mat)
 		// if extracted image is small, we'll need to run some filters on it
 		clock_t begin = clock();
 		bool should_preprocess = (res == Extractor::NEEDS_SHARPEN);
-		unsigned decodeRes = _dec.decode_fountain(img, _writer, should_preprocess);
+		int color_correction = _legacyMode? 1 : 2;
+		unsigned decodeRes = _dec.decode_fountain(img, _writer, should_preprocess, color_correction);
 		bytes += decodeRes;
 		++decoded;
 		decodeTicks += clock() - begin;
 
 		if (decodeRes >= 6900)
 			++perfect;
-	} );
-}
-
-inline bool MultiThreadedDecoder::decode(const cv::Mat& img, bool should_preprocess)
-{
-	return _pool.try_execute( [&, img, should_preprocess] () {
-		clock_t begin = clock();
-		bytes += _dec.decode_fountain(img, _writer, should_preprocess);
-		++decoded;
-		decodeTicks += clock() - begin;
 	} );
 }
 
@@ -131,9 +121,9 @@ inline void MultiThreadedDecoder::stop()
 	_pool.stop();
 }
 
-inline int MultiThreadedDecoder::color_bits() const
+inline bool MultiThreadedDecoder::legacy_mode() const
 {
-	return _colorBits;
+	return _legacyMode;
 }
 
 inline unsigned MultiThreadedDecoder::num_threads() const

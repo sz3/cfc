@@ -37,8 +37,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     private static final int CREATE_FILE = 11;
 
     private CameraBridgeViewBase mOpenCvCameraView;
-    private ToggleButton mColorSwitch;
-    private int colorBits = 2;
+    private ToggleButton mModeSwitch;
+    private int modeVal = 4;
     private String dataPath;
     private String activePath;
 
@@ -80,13 +80,13 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
         mOpenCvCameraView.setCvCameraViewListener(this);
 
-        mColorSwitch = (ToggleButton) findViewById(R.id.color_switch);
-        mColorSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        mModeSwitch = (ToggleButton) findViewById(R.id.mode_switch);
+        mModeSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
-                    colorBits = 3;
+                    modeVal = 4;
                 } else {
-                    colorBits = 2;
+                    modeVal = 68;
                 }
             }
         });
@@ -155,7 +155,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         Mat mat = frame.rgba();
 
         // native call to process current camera frame
-        String res = processImageJNI(mat.getNativeObjAddr(), this.dataPath, this.colorBits);
+        String res = processImageJNI(mat.getNativeObjAddr(), this.dataPath, this.modeVal);
 
         // res will contain a file path if we completed a transfer. Ask the user where to save it
         if (!res.isEmpty()) {
@@ -200,7 +200,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         }
     }
 
-    private native String processImageJNI(long mat, String path, int color_bits);
+    private native String processImageJNI(long mat, String path, int modeInt);
     private native void shutdownJNI();
 }
 

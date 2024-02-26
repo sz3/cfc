@@ -17,12 +17,12 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <ToggleButton
-        android:id="@+id/color_switch"
+        android:id="@+id/mode_switch"
         android:layout_width="48dp"
         android:layout_height="54dp"
         android:background="@android:drawable/divider_horizontal_textfield"
-        android:button="@drawable/colselbg"
-        android:checked="false"
+        android:button="@drawable/modesel"
+        android:checked="true"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
