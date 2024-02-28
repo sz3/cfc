@@ -15,7 +15,7 @@
 class MultiThreadedDecoder
 {
 public:
-	MultiThreadedDecoder(std::string data_path, int mode_val);
+	MultiThreadedDecoder(std::string data_path, int modeVal);
 
 	inline static clock_t count = 0;
 	inline static clock_t bytes = 0;
@@ -31,6 +31,7 @@ public:
 	void stop();
 
 	int mode_val() const;
+	bool set_mode(int modeVal);
 	int detected_mode() const;
 
 	unsigned num_threads() const;
@@ -44,6 +45,8 @@ protected:
 	int do_extract(const cv::Mat& mat, cv::Mat& img);
 	void save(const cv::Mat& img);
 
+	static unsigned fountain_chunk_size(int modeVal);
+
 protected:
 	int _modeVal;
 	int _detectedMode;
@@ -55,13 +58,13 @@ protected:
 	std::string _dataPath;
 };
 
-inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path, int mode_val)
-	: _modeVal(mode_val)
+inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path, int modeVal)
+	: _modeVal(modeVal)
 	, _detectedMode(0)
 	, _dec(cimbar::Config::ecc_bytes(), cimbar::Config::color_bits())
 	, _numThreads(std::max<int>(((int)std::thread::hardware_concurrency()/2), 1))
 	, _pool(_numThreads, 1)
-	, _writer(data_path, cimbar::Config::fountain_chunk_size(cimbar::Config::ecc_bytes(), cimbar::Config::symbol_bits() + cimbar::Config::color_bits(), mode_val==4))
+	, _writer(data_path, fountain_chunk_size(modeVal))
 	, _dataPath(data_path)
 {
 	FountainInit::init();
@@ -133,9 +136,30 @@ inline void MultiThreadedDecoder::stop()
 	_pool.stop();
 }
 
+unsigned MultiThreadedDecoder::fountain_chunk_size(int modeVal)
+{
+	return cimbar::Config::fountain_chunk_size(cimbar::Config::ecc_bytes(), cimbar::Config::symbol_bits() + cimbar::Config::color_bits(), modeVal==4);
+}
+
 inline int MultiThreadedDecoder::mode_val() const
 {
 	return _modeVal;
+}
+
+inline bool MultiThreadedDecoder::set_mode(int modeVal)
+{
+	if (_modeVal == modeVal)
+		return true;
+
+	if (modeVal != 0 and _writer.chunk_size() != fountain_chunk_size(modeVal))
+		return false; // if so, we need to reset to change it
+
+	// reset detectedMode iff we're switching back to autodetect
+	if (modeVal == 0)
+		_detectedMode = 0;
+
+	_modeVal = modeVal;
+	return true;
 }
 
 inline int MultiThreadedDecoder::detected_mode() const

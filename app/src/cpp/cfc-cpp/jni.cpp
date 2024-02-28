@@ -125,7 +125,7 @@ namespace {
 	{
 		std::stringstream sstop;
 		sstop << "cfc using " << proc.num_threads() << " thread(s). " << proc.mode_val() << ":" << proc.detected_mode() << "..." << proc.backlog() << "? ";
-		sstop << (MultiThreadedDecoder::bytes / std::max<double>(1, MultiThreadedDecoder::decoded)) << "b v0.6.1aahh";
+		sstop << (MultiThreadedDecoder::bytes / std::max<double>(1, MultiThreadedDecoder::decoded)) << "b v0.6.1.again";
 		std::stringstream ssmid;
 		ssmid << "#: " << MultiThreadedDecoder::perfect << " / " << MultiThreadedDecoder::decoded << " / " << MultiThreadedDecoder::scanned << " / " << _calls;
 		std::stringstream ssperf;
@@ -175,7 +175,7 @@ Java_org_cimbar_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env, jobject
 	std::shared_ptr<MultiThreadedDecoder> proc;
 	{
 		std::lock_guard<std::mutex> lock(_mutex);
-		if (!_proc or _proc->mode_val() != modeVal)
+		if (!_proc or !_proc->set_mode(modeVal))
 			_proc = std::make_shared<MultiThreadedDecoder>(dataPath, modeVal);
 		proc = _proc;
 	}

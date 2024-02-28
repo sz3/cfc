@@ -161,19 +161,20 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         // res will contain a file path if we completed a transfer. Ask the user where to save it
         if (res.startsWith("/")) {
             if (res.length() >= 2 && res.charAt(1) == '4') {
-                modeVal = detectedMode = 4;
+                detectedMode = 4;
                 mModeSwitch.setActivated(true);
-                try {
-                    mModeSwitch.setChecked(true);
-                } catch (Exception e) {}
             }
             else {
-                modeVal = detectedMode = 68;
+                detectedMode = 68;
                 mModeSwitch.setActivated(false);
-                try {
-                    mModeSwitch.setChecked(true);
-                } catch (Exception e) {}
             }
+            // the check toggle needs to be on the UI thread!
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mModeSwitch.setChecked(true);
+                }
+            });
         }
         else if (!res.isEmpty()) {
             Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
