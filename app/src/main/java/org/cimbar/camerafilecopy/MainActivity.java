@@ -38,7 +38,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 
     private CameraBridgeViewBase mOpenCvCameraView;
     private ToggleButton mModeSwitch;
-    private int modeVal = 4;
+    private int modeVal = 0;
+    private int detectedMode = 68;
     private String dataPath;
     private String activePath;
 
@@ -84,9 +85,9 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         mModeSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
-                    modeVal = 4;
+                    modeVal = detectedMode;
                 } else {
-                    modeVal = 68;
+                    modeVal = 0;
                 }
             }
         });
@@ -158,7 +159,23 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         String res = processImageJNI(mat.getNativeObjAddr(), this.dataPath, this.modeVal);
 
         // res will contain a file path if we completed a transfer. Ask the user where to save it
-        if (!res.isEmpty()) {
+        if (res.startsWith("/")) {
+            if (res.length() >= 2 && res.charAt(1) == '4') {
+                modeVal = detectedMode = 4;
+                mModeSwitch.setActivated(true);
+                try {
+                    mModeSwitch.setChecked(true);
+                } catch (Exception e) {}
+            }
+            else {
+                modeVal = detectedMode = 68;
+                mModeSwitch.setActivated(false);
+                try {
+                    mModeSwitch.setChecked(true);
+                } catch (Exception e) {}
+            }
+        }
+        else if (!res.isEmpty()) {
             Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
             intent.addCategory(Intent.CATEGORY_OPENABLE);
             intent.setType("application/octet-stream");
