@@ -10,6 +10,6 @@
         android:drawable="@drawable/ic_modeb"/>
 
     <item android:state_checked="false"
-        android:drawable="@drawable/ic_color8"/>
+        android:drawable="@drawable/ic_modeguess"/>
 
 </selector>
