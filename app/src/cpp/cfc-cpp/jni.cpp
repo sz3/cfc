@@ -3,6 +3,7 @@
 #include "cimb_translator/CimbReader.h"
 #include "encoder/Decoder.h"
 #include "extractor/Scanner.h"
+#include "serialize/format.h"
 
 #include <jni.h>
 #include <android/log.h>
@@ -123,8 +124,8 @@ namespace {
 	void drawDebugInfo(cv::Mat& mat, MultiThreadedDecoder& proc)
 	{
 		std::stringstream sstop;
-		sstop << "cfc using " << proc.num_threads() << " thread(s). " << proc.legacy_mode() << "..." << proc.backlog() << "? ";
-		sstop << (MultiThreadedDecoder::bytes / std::max<double>(1, MultiThreadedDecoder::decoded)) << "b v0.6.0f";
+		sstop << "cfc using " << proc.num_threads() << " thread(s). " << proc.mode() << ":" << proc.detected_mode() << "..." << proc.backlog() << "? ";
+		sstop << (MultiThreadedDecoder::bytes / std::max<double>(1, MultiThreadedDecoder::decoded)) << "b v0.6.1";
 		std::stringstream ssmid;
 		ssmid << "#: " << MultiThreadedDecoder::perfect << " / " << MultiThreadedDecoder::decoded << " / " << MultiThreadedDecoder::scanned << " / " << _calls;
 		std::stringstream ssperf;
@@ -170,13 +171,12 @@ Java_org_cimbar_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env, jobject
 	Mat &mat = *(Mat *) matAddr;
 	string dataPath = jstring_to_cppstr(env, dataPathObj);
 	int modeVal = (int)modeInt;
-	bool legacyMode = modeVal <= 8; // current scheme: old 4c = 4, old 8c = 8, new = bigger number
 
 	std::shared_ptr<MultiThreadedDecoder> proc;
 	{
 		std::lock_guard<std::mutex> lock(_mutex);
-		if (!_proc or _proc->legacy_mode() != legacyMode)
-			_proc = std::make_shared<MultiThreadedDecoder>(dataPath, legacyMode);
+		if (!_proc or !_proc->set_mode(modeVal))
+			_proc = std::make_shared<MultiThreadedDecoder>(dataPath, modeVal);
 		proc = _proc;
 	}
 
@@ -205,6 +205,9 @@ Java_org_cimbar_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env, jobject
 
 	// return a decoded file to prompt the user to save it, if there is a new one
 	string result;
+	if (proc->detected_mode()) // repurpose str for special message passing
+		result = fmt::format("/{}", proc->detected_mode());
+
 	std::vector<string> all_decodes = proc->get_done();
 	for (string& s : all_decodes)
 		if (_completed.find(s) == _completed.end())
