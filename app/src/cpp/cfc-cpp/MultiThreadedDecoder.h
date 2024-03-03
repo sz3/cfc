@@ -15,7 +15,7 @@
 class MultiThreadedDecoder
 {
 public:
-	MultiThreadedDecoder(std::string data_path, int modeVal);
+	MultiThreadedDecoder(std::string data_path, int mode_val);
 
 	inline static clock_t count = 0;
 	inline static clock_t bytes = 0;
@@ -30,8 +30,8 @@ public:
 
 	void stop();
 
-	int mode_val() const;
-	bool set_mode(int modeVal);
+	int mode() const;
+	bool set_mode(int mode_val);
 	int detected_mode() const;
 
 	unsigned num_threads() const;
@@ -45,7 +45,7 @@ protected:
 	int do_extract(const cv::Mat& mat, cv::Mat& img);
 	void save(const cv::Mat& img);
 
-	static unsigned fountain_chunk_size(int modeVal);
+	static unsigned fountain_chunk_size(int mode_val);
 
 protected:
 	int _modeVal;
@@ -58,13 +58,13 @@ protected:
 	std::string _dataPath;
 };
 
-inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path, int modeVal)
-	: _modeVal(modeVal)
+inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path, int mode_val)
+	: _modeVal(mode_val)
 	, _detectedMode(0)
 	, _dec(cimbar::Config::ecc_bytes(), cimbar::Config::color_bits())
 	, _numThreads(std::max<int>(((int)std::thread::hardware_concurrency()/2), 1))
 	, _pool(_numThreads, 1)
-	, _writer(data_path, fountain_chunk_size(modeVal))
+	, _writer(data_path, fountain_chunk_size(mode_val))
 	, _dataPath(data_path)
 {
 	FountainInit::init();
@@ -136,29 +136,29 @@ inline void MultiThreadedDecoder::stop()
 	_pool.stop();
 }
 
-unsigned MultiThreadedDecoder::fountain_chunk_size(int modeVal)
+unsigned MultiThreadedDecoder::fountain_chunk_size(int mode_val)
 {
-	return cimbar::Config::fountain_chunk_size(cimbar::Config::ecc_bytes(), cimbar::Config::symbol_bits() + cimbar::Config::color_bits(), modeVal==4);
+	return cimbar::Config::fountain_chunk_size(cimbar::Config::ecc_bytes(), cimbar::Config::symbol_bits() + cimbar::Config::color_bits(), mode_val==4);
 }
 
-inline int MultiThreadedDecoder::mode_val() const
+inline int MultiThreadedDecoder::mode() const
 {
 	return _modeVal;
 }
 
-inline bool MultiThreadedDecoder::set_mode(int modeVal)
+inline bool MultiThreadedDecoder::set_mode(int mode_val)
 {
-	if (_modeVal == modeVal)
+	if (_modeVal == mode_val)
 		return true;
 
-	if (modeVal != 0 and _writer.chunk_size() != fountain_chunk_size(modeVal))
+	if (mode_val != 0 and _writer.chunk_size() != fountain_chunk_size(mode_val))
 		return false; // if so, we need to reset to change it
 
 	// reset detectedMode iff we're switching back to autodetect
-	if (modeVal == 0)
+	if (mode_val == 0)
 		_detectedMode = 0;
 
-	_modeVal = modeVal;
+	_modeVal = mode_val;
 	return true;
 }
 
