@@ -162,19 +162,25 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         if (res.startsWith("/")) {
             if (res.length() >= 2 && res.charAt(1) == '4') {
                 detectedMode = 4;
-                mModeSwitch.setActivated(true);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mModeSwitch.setActivated(true);
+                        mModeSwitch.setChecked(true);
+                    }
+                });
             }
             else {
                 detectedMode = 68;
-                mModeSwitch.setActivated(false);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mModeSwitch.setActivated(false);
+                        mModeSwitch.setChecked(true);
+                    }
+                });
             }
-            // the check toggle needs to be on the UI thread!
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    mModeSwitch.setChecked(true);
-                }
-            });
+
         }
         else if (!res.isEmpty()) {
             Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
