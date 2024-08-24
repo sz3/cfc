@@ -1,20 +1,23 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 33
+    compileSdkVersion 34
     buildToolsVersion "30.0.3"
     ndkVersion "25.2.9519653"
     defaultConfig {
         applicationId "org.cimbar.camerafilecopy"
         minSdkVersion 21
-        targetSdkVersion 33
-        versionCode 15
-        versionName "0.6.1-4.8-arm32"
+        targetSdkVersion 34
+        versionCode 18
+        versionName "0.6.1g"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        ndk {
+            abiFilters "arm64-v8a"
+        }
         externalNativeBuild {
             cmake {
                 cppFlags "-frtti -fexceptions -std=c++17"
-                abiFilters 'armeabi-v7a'
+                abiFilters 'arm64-v8a'
                 arguments "-DOpenCV_DIR=" + opencvsdk + "/sdk/native"
             }
         }
