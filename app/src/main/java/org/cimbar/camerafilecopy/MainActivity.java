@@ -37,11 +37,21 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     private static final int CREATE_FILE = 11;
 
     private CameraBridgeViewBase mOpenCvCameraView;
+    private Toast mToast;
     private ToggleButton mModeSwitch;
     private int modeVal = 0;
     private int detectedMode = 68;
     private String dataPath;
     private String activePath;
+
+
+    private void showToast(String msg, int length) {
+        if (mToast != null) {
+            mToast.cancel();
+        }
+        mToast = Toast.makeText(this, msg, length);
+        mToast.show();
+    }
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -101,7 +111,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
             } else {
                 String message = "Camera permission was not granted";
                 Log.e(TAG, message);
-                Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+                this.showToast(message, Toast.LENGTH_LONG);
             }
         } else {
             Log.e(TAG, "Unexpected permission request");
@@ -111,7 +121,10 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     @Override
     public void onStart() {
         super.onStart();
-        Toast.makeText(this, "Encode data at https://cimbar.org! :)",  Toast.LENGTH_LONG).show();
+        // only show this tip if no other messages are active
+        if (mToast == null) {
+            this.showToast("Encode data at https://cimbar.org! :)", Toast.LENGTH_LONG);
+        }
     }
 
     @Override
@@ -158,7 +171,12 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         // native call to process current camera frame
         String res = processImageJNI(mat.getNativeObjAddr(), this.dataPath, this.modeVal);
 
-        // res will contain a file path if we completed a transfer. Ask the user where to save it
+        // res can be one of 3 things:
+        // 1. nothing. Move along, nothing more to do now
+        // 2. an autodetected mode value. We use "4" for mode 4c, and "68" for mode B
+        // 3. a file path representing a completed decode.
+        //    Any string not beginning with "/" is treated as such (absolute paths are invalid)
+        // ... a more formalized message passing syntax may eventually be helpful.
         if (res.startsWith("/")) {
             if (res.length() >= 2 && res.charAt(1) == '4') {
                 detectedMode = 4;
@@ -182,6 +200,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
             }
 
         }
+        // if res contains a file path, we've finished decoding a file. Ask the user where to save it
         else if (!res.isEmpty()) {
             Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
             intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -205,7 +224,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
             // copy this.activePath (tempfile) to the user-specified location
             try (
                     InputStream istream = new FileInputStream(this.activePath);
-                    OutputStream ostream = getContentResolver().openOutputStream(data.getData())
+                    OutputStream ostream = getContentResolver().openOutputStream(data.getData());
             ) {
                 byte[] buf = new byte[8192];
                 int length;
@@ -213,6 +232,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
                     ostream.write(buf, 0, length);
                 }
                 ostream.flush();
+                // notify toast on success?
+                this.showToast("Save complete!",  Toast.LENGTH_SHORT);
             } catch (Exception e) {
                 Log.e(TAG, "failed to write file " + e.toString());
             } finally {
