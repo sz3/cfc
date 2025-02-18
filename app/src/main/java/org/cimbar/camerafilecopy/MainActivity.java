@@ -232,6 +232,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
                     ostream.write(buf, 0, length);
                 }
                 ostream.flush();
+                ostream.close();
+                istream.close();
                 // notify toast on success?
                 this.showToast("Save complete!",  Toast.LENGTH_SHORT);
             } catch (Exception e) {
@@ -240,6 +242,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
                 try {
                     new File(this.activePath).delete();
                 } catch (Exception e) {}
+                istream.close();
                 this.activePath = null;
             }
         }
