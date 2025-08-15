@@ -2,7 +2,7 @@
 #include "cimbar_js.h"
 
 #include "cimb_translator/Config.h"
-#include "encoder/SimpleEncoder.h"
+#include "encoder/Encoder.h"
 #include "gui/window_glfw.h"
 #include "util/byte_istream.h"
 
@@ -18,20 +18,17 @@ namespace {
 	int _frameCount = 0;
 	uint8_t _encodeId = 109;
 
-	// settings
+	// settings, will be overriden by first call to configure()
 	unsigned _ecc = cimbar::Config::ecc_bytes();
 	unsigned _colorBits = cimbar::Config::color_bits();
 	int _compressionLevel = cimbar::Config::compression_level();
-	bool _legacyMode = true;
+	bool _legacyMode = false;
 }
 
 extern "C" {
 
-int initialize_GL(int width, int height)
+int cimbare_init_window(int width, int height)
 {
-	if (_window)
-		return 1;
-
 	// must be divisible by 4???
 	if (width % 4 != 0)
 		width += (4 - width % 4);
@@ -39,17 +36,43 @@ int initialize_GL(int width, int height)
 		height += (4 - height % 4);
 	std::cerr << "initializing " << width << " by " << height << " window";
 
-	_window = std::make_shared<cimbar::window_glfw>(width, height, "Cimbar Encoder");
+	if (_window and _window->is_good())
+		_window->resize(width, height);
+	else
+		_window = std::make_shared<cimbar::window_glfw>(width, height, "Cimbar Encoder");
 	if (!_window or !_window->is_good())
-		return 0;
+		return -1;
 
-	return 1;
+	return 0;
+}
+
+bool cimbare_auto_scale_window()
+{
+	if (!_window or !_window->is_good())
+		return false;
+
+	_window->auto_scale_to_window();
+	return true;
+}
+
+// we may change the api to accept an buff to next_frame()
+// rather than generating a fresh cv::Mat alloc each time
+// but for now, for non-JS purposes we expose this function
+int cimbare_get_frame_buff(unsigned char** buff)
+{
+	if (!_next)
+		return -2;
+	if (_next->cols == 0 or _next->rows == 0)
+		return -1;
+
+	*buff = _next->data;
+	return _next->cols * _next->rows * _next->channels();
 }
 
 // render() and next_frame() could be put in the same function,
 // but it seems cleaner to split them.
 // in any case, we're concerned with frame pacing (some encodes take longer than others)
-int render()
+int cimbare_render()
 {
 	if (!_window or !_fes or _window->should_close())
 		return -1;
@@ -63,40 +86,43 @@ int render()
 	return 0;
 }
 
-int next_frame()
+int cimbare_next_frame()
 {
-	if (!_window or !_fes)
-		return 0;
+	if (!_fes)
+		return -1;
 
-	// we generate 5x the amount of required symbol blocks -- unless everything fits in a single frame.
-	// color blocks will contribute to this total, but only symbols are used for the initial calculation.
-	// ... this way, if the color decode is failing, it won't get "stuck" failing to read a single frame.
-	unsigned required = _fes->blocks_required();
-	if (required > cimbar::Config::fountain_chunks_per_frame(cimbar::Config::symbol_bits(), _legacyMode))
-		required = required*5;
+	// we generate 8x the amount of required symbol blocks.
+	// this number is somewhat arbitrary, but needs to not be
+	// *too* low (1-2), or we risk long runs of blocks the decoder
+	// has already seen.
+	unsigned required = _fes->blocks_required() * 8;
 	if (_fes->block_count() > required)
 	{
 		_fes->restart();
-		_window->shake(0);
+		if (_window)
+			_window->shake(0);
 		_frameCount = 0;
 	}
 
-	SimpleEncoder enc(_ecc, cimbar::Config::symbol_bits(), _colorBits);
+	Encoder enc(_ecc, cimbar::Config::symbol_bits(), _colorBits);
 	if (_legacyMode)
 		enc.set_legacy_mode();
 
 	enc.set_encode_id(_encodeId);
-	_next = enc.encode_next(*_fes, _window->width());
+	_next = enc.encode_next(*_fes, _window? cimbar::vec_xy{_window->width(), _window->height()} : cimbar::vec_xy{});
 	return ++_frameCount;
 }
 
-int encode(unsigned char* buffer, unsigned size, int encode_id)
+int cimbare_encode(const unsigned char* buffer, unsigned size, const char* filename, unsigned fnsize, int encode_id)
 {
 	_frameCount = 0;
 	if (!FountainInit::init())
+	{
 		std::cerr << "failed FountainInit :(" << std::endl;
+		return -5;
+	}
 
-	SimpleEncoder enc(_ecc, cimbar::Config::symbol_bits(), _colorBits);
+	Encoder enc(_ecc, cimbar::Config::symbol_bits(), _colorBits);
 	if (_legacyMode)
 		enc.set_legacy_mode();
 
@@ -105,17 +131,17 @@ int encode(unsigned char* buffer, unsigned size, int encode_id)
 	else
 		enc.set_encode_id(static_cast<uint8_t>(encode_id));
 
-	cimbar::byte_istream bis(reinterpret_cast<char*>(buffer), size);
-	_fes = enc.create_fountain_encoder(bis, _compressionLevel);
+	cimbar::byte_istream bis(reinterpret_cast<const char*>(buffer), size);
+	_fes = enc.create_fountain_encoder(bis, std::string_view(filename, fnsize), _compressionLevel);
 
 	if (!_fes)
-		return 0;
+		return -1; // return -1 plz
 
 	_next.reset();
-	return 1;
+	return 0;
 }
 
-int configure(unsigned color_bits, unsigned ecc, int compression, bool legacy_mode)
+int cimbare_configure(unsigned color_bits, unsigned ecc, int compression, bool legacy_mode)
 {
 	// defaults
 	if (color_bits > 3)
@@ -124,6 +150,13 @@ int configure(unsigned color_bits, unsigned ecc, int compression, bool legacy_mo
 		ecc = cimbar::Config::ecc_bytes();
 	if (compression < 0 or compression > 22)
 		compression = cimbar::Config::compression_level();
+
+	// make sure we've initialized
+	int window_size_x = cimbar::Config::image_size_x() + 16;
+	int window_size_y = cimbar::Config::image_size_y() + 16;
+	int initRes = cimbare_init_window(window_size_x, window_size_y);
+	if (initRes < 0)
+		return initRes;
 
 	// check if we need to refresh the stream
 	bool refresh = (color_bits != _colorBits or ecc != _ecc or compression != _compressionLevel or legacy_mode != _legacyMode);
@@ -152,5 +185,15 @@ int configure(unsigned color_bits, unsigned ecc, int compression, bool legacy_mo
 	}
 	return 0;
 }
+
+float cimbare_get_aspect_ratio()
+{
+	// based on the current config
+	// we use +16 to match configure()
+	float window_size_x = cimbar::Config::image_size_x() + 16;
+	float window_size_y = cimbar::Config::image_size_y() + 16;
+	return window_size_x / window_size_y;
+}
+
 
 }

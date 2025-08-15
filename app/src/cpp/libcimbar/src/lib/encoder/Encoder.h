@@ -1,80 +1,191 @@
 /* This code is subject to the terms of the Mozilla Public License, v.2.0. http://mozilla.org/MPL/2.0/. */
 #pragma once
 
-#include "SimpleEncoder.h"
+#include "reed_solomon_stream.h"
+#include "bit_file/bitreader.h"
+#include "bit_file/bitbuffer.h"
+#include "cimb_translator/CimbWriter.h"
 #include "cimb_translator/Config.h"
-#include "serialize/format.h"
+#include "compression/zstd_compressor.h"
+#include "fountain/fountain_encoder_stream.h"
 
 #include <opencv2/opencv.hpp>
-#include <functional>
+#include <optional>
 #include <string>
 
-class Encoder : public SimpleEncoder
+class Encoder
 {
 public:
-	using SimpleEncoder::SimpleEncoder;
+	Encoder(int ecc_bytes=-1, unsigned bits_per_symbol=0, int bits_per_color=-1);
+	void set_legacy_mode();
+	void set_encode_id(uint8_t encode_id); // [0-127] -- the high bit is ignored.
 
-	unsigned encode(const std::string& filename, std::string output_prefix);
-	unsigned encode_fountain(const std::string& filename, std::string output_prefix, int compression_level=16, double redundancy=1.2, int canvas_size=0);
-	unsigned encode_fountain(const std::string& filename, const std::function<bool(const cv::Mat&, unsigned)>& on_frame, int compression_level=16, double redundancy=4.0, int canvas_size=0);
+	template <typename STREAM>
+	std::optional<cv::Mat> encode_next(STREAM& stream, cimbar::vec_xy canvas_size={});
+
+	template <typename STREAM>
+	fountain_encoder_stream::ptr create_fountain_encoder(STREAM& stream, const std::string_view& filename, int compression_level=16);
+
+protected:
+	template <typename STREAM>
+	std::optional<cv::Mat> encode_next_coupled(STREAM& stream, cimbar::vec_xy canvas_size={});
+
+protected:
+	unsigned _eccBytes;
+	unsigned _eccBlockSize;
+	unsigned _bitsPerSymbol;
+	unsigned _bitsPerColor;
+	bool _dark;
+	bool _coupled;
+	unsigned _colorMode;
+	uint8_t _encodeId = 0;
 };
 
-inline unsigned Encoder::encode(const std::string& filename, std::string output_prefix)
+inline Encoder::Encoder(int ecc_bytes, unsigned bits_per_symbol, int bits_per_color)
+	: _eccBytes(ecc_bytes >= 0? ecc_bytes : cimbar::Config::ecc_bytes())
+	, _eccBlockSize(cimbar::Config::ecc_block_size())
+	, _bitsPerSymbol(bits_per_symbol? bits_per_symbol : cimbar::Config::symbol_bits())
+	, _bitsPerColor(bits_per_color >= 0? bits_per_color : cimbar::Config::color_bits())
+	, _dark(cimbar::Config::dark())
+	, _coupled(false)
+	, _colorMode(cimbar::Config::color_mode())
 {
-	std::ifstream f(filename);
+}
 
-	unsigned i = 0;
-	while (true)
+inline void Encoder::set_legacy_mode()
+{
+	_coupled = true;
+	_colorMode = 0;
+}
+
+// TODO: why does this exist here vs just being passed to create_fountain_encoder?
+// seems confusing...
+inline void Encoder::set_encode_id(uint8_t encode_id)
+{
+	_encodeId = encode_id;
+}
+
+template <typename STREAM>
+inline std::optional<cv::Mat> Encoder::encode_next(STREAM& stream, cimbar::vec_xy canvas_size)
+{
+	if (_coupled)
+		return encode_next_coupled(stream, canvas_size);
+
+	if (!stream.good())
+		return std::nullopt;
+
+	unsigned bits_per_op = _bitsPerColor + _bitsPerSymbol;
+	CimbWriter writer(_bitsPerSymbol, _bitsPerColor, _dark, _colorMode, canvas_size);
+
+	unsigned numCells = writer.num_cells();
+	bitbuffer bb(cimbar::Config::capacity(bits_per_op));
+
+	unsigned bitPos = 0;
+	unsigned endBitPos = numCells*bits_per_op;
+
+	int progress = 0;
+	unsigned bitsPerRead = _bitsPerSymbol;
+	unsigned bitsPerWrite = bits_per_op;
+
+	reed_solomon_stream rss(stream, _eccBytes, _eccBlockSize);
+	bitreader br;
+	while (rss.good() and progress < 2)  // 1 symbol pass + 1 color pass
 	{
-		auto frame = encode_next(f);
-		if (!frame)
+		unsigned bytes = rss.readsome();
+		if (bytes == 0)
 			break;
+		br.assign_new_buffer(rss.buffer(), bytes);
 
-		std::string output = fmt::format("{}_{}.png", output_prefix, i);
-		// imwrite expects BGR
-		cv::cvtColor(*frame, *frame, cv::COLOR_RGB2BGR);
-		cv::imwrite(output, *frame);
-		++i;
+		// reorder. We're encoding the symbol bits and striping them across the whole image
+		// then encoding the color bits and striping them in the same way (filling in the gaps)
+		while (!br.empty())
+		{
+			unsigned bits = br.read(bitsPerRead);
+			if (!br.partial())
+				bb.write(bits, bitPos, bitsPerWrite);
+			bitPos += bits_per_op;
+
+			if (bitPos >= endBitPos)
+			{
+				// switch to color section
+				bitsPerRead = _bitsPerColor;
+				bitsPerWrite = _bitsPerColor;
+				bitPos = 0;
+				++progress;
+				break;
+			}
+		}
 	}
-	return i;
-}
 
-inline unsigned Encoder::encode_fountain(const std::string& filename, const std::function<bool(const cv::Mat&, unsigned)>& on_frame, int compression_level, double redundancy, int canvas_size)
-{
-	std::ifstream infile(filename);
-	fountain_encoder_stream::ptr fes = create_fountain_encoder(infile, compression_level);
-	if (!fes)
-		return 0;
-
-	// ex: with ecc = 30 and 155 byte blocks, we have 60 rs blocks * 125 bytes per block == 7500 bytes to work with.
-	// if fountain_chunks_per_frame() is 10, the fountain_chunk_size will be 750.
-	// we calculate requiredFrames based only on symbol bits, to avoid the situation where the color decode is failing while we're
-	// refusing to generate additional frames...
-	unsigned requiredFrames = fes->blocks_required() * redundancy / cimbar::Config::fountain_chunks_per_frame(_bitsPerSymbol, _coupled and _colorMode==0);
-	if (requiredFrames == 0)
-		requiredFrames = 1;
-
-	unsigned i = 0;
-	while (i < requiredFrames)
+	// dump whatever we have to image
+	for (bitPos = 0; bitPos < endBitPos; bitPos+=bits_per_op)
 	{
-		auto frame = encode_next(*fes, canvas_size);
-		if (!frame)
-			break;
-
-		if (!on_frame(*frame, i))
-			break;
-		++i;
+		unsigned bits = bb.read(bitPos, bits_per_op);
+		writer.write(bits);
 	}
-	return i;
+
+	// return what we've got
+	return writer.image();
 }
 
-inline unsigned Encoder::encode_fountain(const std::string& filename, std::string output_prefix, int compression_level, double redundancy, int canvas_size)
+template <typename STREAM>
+inline std::optional<cv::Mat> Encoder::encode_next_coupled(STREAM& stream, cimbar::vec_xy canvas_size)
 {
-	std::function<bool(const cv::Mat&, unsigned)> fun = [output_prefix] (const cv::Mat& frame, unsigned i) {
-		std::string output = fmt::format("{}_{}.png", output_prefix, i);
-		cv::Mat bgr;
-		cv::cvtColor(frame, bgr, cv::COLOR_RGB2BGR);
-		return cv::imwrite(output, bgr);
-	};
-	return encode_fountain(filename, fun, compression_level, redundancy, canvas_size);
+	// the old way. Symbol and color bits are mixed together, limiting the color correction possibilities
+	// but potentially allowing a lack of errors in one channel to correct errors in the other.
+	// ... also, potentially allowing a preponderance of errors in one channel to doom the whole decode.
+	// the net result is that best case performance *can* be better this way, but average and worst case
+	// will be worse.
+	if (!stream.good())
+		return std::nullopt;
+
+	unsigned bits_per_op = _bitsPerColor + _bitsPerSymbol;
+	CimbWriter writer(_bitsPerSymbol, _bitsPerColor, _dark, _colorMode, canvas_size);
+
+	reed_solomon_stream rss(stream, _eccBytes, _eccBlockSize);
+	bitreader br;
+	while (rss.good())
+	{
+		unsigned bytes = rss.readsome();
+		if (bytes == 0)
+			break;
+		br.assign_new_buffer(rss.buffer(), bytes);
+		while (!br.empty())
+		{
+			unsigned bits = br.read(bits_per_op);
+			if (!br.partial())
+				writer.write(bits);
+		}
+		if (writer.done())
+			return writer.image();
+	}
+	// we don't have a full frame, but return what we've got
+	return writer.image();
 }
+
+template <typename STREAM>
+inline fountain_encoder_stream::ptr Encoder::create_fountain_encoder(STREAM& stream, const std::string_view& filename, int compression_level)
+{
+	unsigned chunk_size = cimbar::Config::fountain_chunk_size(_eccBytes, _bitsPerColor + _bitsPerSymbol, (_colorMode==0 and _coupled));
+
+	std::stringstream ss;
+	if (compression_level <= 0)
+		ss << stream.rdbuf();
+	else
+	{
+		cimbar::zstd_compressor<std::stringstream> f;
+		if (!filename.empty())
+			f.write_header(filename.data(), filename.size());
+		if (!f.compress(stream))
+			return nullptr;
+
+		// find size of compressed zstd stream, and pad it if necessary.
+		size_t compressedSize = f.size();
+		if (compressedSize < chunk_size)
+			f.pad(chunk_size - compressedSize + 1);
+		ss = std::move(f);
+	}
+
+	return fountain_encoder_stream::create(ss, chunk_size, _encodeId);
+}
+

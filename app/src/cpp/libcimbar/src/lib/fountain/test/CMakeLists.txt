@@ -7,6 +7,7 @@ set (SOURCES
 	FountainEncodingTest.cpp
 	FountainMetadataTest.cpp
 	fountain_sinkTest.cpp
+	fountain_sinkSpecialTest.cpp
 	fountain_streamTest.cpp
 )
 
@@ -25,6 +26,7 @@ add_test(fountain_test fountain_test)
 
 target_link_libraries(fountain_test
 	wirehair
+	zstd
 
 	${CPPFILESYSTEM}
 )

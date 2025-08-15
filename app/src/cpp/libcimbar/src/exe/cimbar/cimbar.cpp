@@ -1,8 +1,8 @@
 /* This code is subject to the terms of the Mozilla Public License, v.2.0. http://mozilla.org/MPL/2.0/. */
 #include "cimb_translator/Config.h"
 #include "compression/zstd_decompressor.h"
-#include "encoder/Decoder.h"
-#include "encoder/Encoder.h"
+#include "encoder/DecoderPlus.h"
+#include "encoder/EncoderPlus.h"
 #include "extractor/Extractor.h"
 #include "extractor/SimpleCameraCalibration.h"
 #include "extractor/Undistort.h"
@@ -13,7 +13,7 @@
 #include "cxxopts/cxxopts.hpp"
 
 #include <cstdio>
-#include <experimental/filesystem>
+#include <filesystem>
 #include <functional>
 #include <iostream>
 #include <string>
@@ -40,8 +40,11 @@ namespace {
 		{
 			if (_done)
 				return;
-
+#ifdef _WIN32
+			if (::feof(stdin))
+#else
 			if (::feof(::stdin))
+#endif
 			{
 				mark_done();
 				return;
@@ -103,7 +106,8 @@ namespace {
 template <typename FilenameIterable>
 int encode(const FilenameIterable& infiles, const std::string& outpath, int ecc, int color_bits, int compression_level, bool legacy_mode, bool no_fountain)
 {
-	Encoder en(ecc, cimbar::Config::symbol_bits(), color_bits);
+	EncoderPlus en(ecc, cimbar::Config::symbol_bits(), color_bits);
+	en.set_encode_id(109);
 	if (legacy_mode)
 		en.set_legacy_mode();
 	for (const string& f : infiles)
@@ -200,20 +204,27 @@ int main(int argc, char** argv)
 	if (result.count("help"))
 	{
 		std::cerr << options.help() << std::endl;
-		exit(0);
+		return 0;
 	}
 
-	string outpath = std::experimental::filesystem::current_path();
+	string outpath = std::filesystem::current_path().string();
 	if (result.count("out"))
 		outpath = result["out"].as<string>();
 	std::cerr << "Output files will appear in " << outpath << std::endl;
 
 	bool useStdin = !result.count("in");
 	vector<string> infiles;
-	if (useStdin)
-		std::cerr << "Enter input filenames:" << std::endl;
-	else
+	if (!useStdin)
+	{
 		infiles = result["in"].as<vector<string>>();
+		if (infiles.empty())
+		{
+			std::cerr << "No input files? :(" << std::endl;
+			return 128;
+		}
+	}
+	else
+		std::cerr << "Enter input filenames:" << std::endl;
 
 	bool encodeFlag = result.count("encode");
 	bool no_fountain = result.count("no-fountain");
@@ -247,7 +258,7 @@ int main(int argc, char** argv)
 	int preprocess = result["preprocess"].as<int>();
 
 	unsigned color_mode = legacy_mode? 0 : 1;
-	Decoder d(ecc, colorBits);
+	DecoderPlus d(ecc, colorBits);
 
 	if (no_fountain)
 	{
@@ -271,12 +282,12 @@ int main(int argc, char** argv)
 	unsigned chunkSize = cimbar::Config::fountain_chunk_size(ecc, colorBits+cimbar::Config::symbol_bits(), legacy_mode);
 	if (compressionLevel <= 0)
 	{
-		fountain_decoder_sink<std::ofstream> sink(outpath, chunkSize, true);
+		fountain_decoder_sink sink(chunkSize, write_on_store<std::ofstream>(outpath, true));
 		res = decode(infiles, fountain_decode_fun(sink, d), no_deskew, undistort, color_mode, preprocess, color_correct);
 	}
 	else // default case, all bells and whistles
 	{
-		fountain_decoder_sink<cimbar::zstd_decompressor<std::ofstream>> sink(outpath, chunkSize, true);
+		fountain_decoder_sink sink(chunkSize, write_on_store<cimbar::zstd_decompressor<std::ofstream>>(outpath, true));
 
 		if (useStdin)
 			res = decode(StdinLineReader(), fountain_decode_fun(sink, d), no_deskew, undistort, color_mode, preprocess, color_correct);
