@@ -23,3 +23,5 @@ target_link_libraries(cfc-cpp
         ${OPENCV_LIBS}
         ${log-lib}
 )
+
+target_compile_options(cfc-cpp  PUBLIC "-DZSTD_STATIC_LINKING_ONLY")

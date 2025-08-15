@@ -54,7 +54,7 @@ protected:
 	Decoder _dec;
 	unsigned _numThreads;
 	turbo::thread_pool _pool;
-	concurrent_fountain_decoder_sink<cimbar::zstd_decompressor<std::ofstream>> _writer;
+	concurrent_fountain_decoder_sink _writer;
 	std::string _dataPath;
 };
 
@@ -64,7 +64,7 @@ inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path, int mod
 	, _dec(cimbar::Config::ecc_bytes(), cimbar::Config::color_bits())
 	, _numThreads(std::max<int>(((int)std::thread::hardware_concurrency()/2), 1))
 	, _pool(_numThreads, 1)
-	, _writer(data_path, fountain_chunk_size(mode_val))
+	, _writer(fountain_chunk_size(mode_val), decompress_on_store<std::ofstream>(data_path, true))
 	, _dataPath(data_path)
 {
 	FountainInit::init();
