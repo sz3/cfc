@@ -6,11 +6,16 @@
 extern "C" {
 #endif
 
-int initialize_GL(int width, int height);
-int render();
-int next_frame();
-int encode(unsigned char* buffer, unsigned size, int encode_id);  // encode_id == -1 -> auto-increment
-int configure(unsigned color_bits, unsigned ecc, int compression, bool legacy_mode);
+int cimbare_init_window(int width, int height);
+int cimbare_render();
+int cimbare_next_frame();
+int cimbare_encode(const unsigned char* buffer, unsigned size, const char* filename, unsigned fnsize, int encode_id);  // encode_id == -1 -> auto-increment
+int cimbare_configure(unsigned color_bits, unsigned ecc, int compression, bool legacy_mode);
+float cimbare_get_aspect_ratio();
+
+// internal usage
+bool cimbare_auto_scale_window();
+int cimbare_get_frame_buff(unsigned char** buff);
 
 #ifdef __cplusplus
 }

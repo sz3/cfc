@@ -3,6 +3,10 @@ cmake_minimum_required(VERSION 3.10)
 project ( libcimbar )
 enable_testing()
 
+if (MSVC)
+    add_compile_options(/FI "iso646.h")
+endif()
+
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 	set(CMAKE_INSTALL_PREFIX "${libcimbar_SOURCE_DIR}/dist" CACHE PATH "..." FORCE)
 endif()
@@ -50,6 +54,10 @@ if(NOT DEFINED CPPFILESYSTEM)
 	set(CPPFILESYSTEM "stdc++fs")
 endif()
 
+if(MSVC)
+	set(CPPFILESYSTEM "")
+endif()
+
 set (PROJECTS
 	src/lib/bit_file
 	src/lib/chromatic_adaptation
@@ -57,6 +65,7 @@ set (PROJECTS
 	src/lib/cimbar_js
 	src/lib/compression
 	src/lib/encoder
+	src/lib/extractor
 	src/lib/fountain
 	src/lib/gui
 	src/lib/image_hash
@@ -75,11 +84,11 @@ set (PROJECTS
 if(NOT DEFINED USE_WASM)
 set(PROJECTS
 	${PROJECTS}
-	src/lib/extractor
 
 	src/exe/cimbar
 	src/exe/cimbar_extract
 	src/exe/cimbar_recv
+	src/exe/cimbar_recv2
 	src/exe/cimbar_send
 	src/exe/build_image_assets
 )
