@@ -1,6 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
+    namespace 'org.cimbar.camerafilecopy'
     compileSdkVersion 34
     buildToolsVersion "30.0.3"
     ndkVersion "25.2.9519653"
