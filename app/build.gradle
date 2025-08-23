@@ -8,11 +8,12 @@ android {
         applicationId "org.cimbar.camerafilecopy"
         minSdkVersion 21
         targetSdkVersion 30
-        versionCode 15
-        versionName "0.6.1"
+        versionCode 20
+        versionName "0.6.2d"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
+                //arguments "-DCMAKE_BUILD_TYPE=Release"
                 cppFlags "-frtti -fexceptions -std=c++17"
                 abiFilters 'arm64-v8a'
                 arguments "-DOpenCV_DIR=" + opencvsdk + "/sdk/native"
@@ -38,8 +39,5 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'androidx.appcompat:appcompat:1.1.0'
     implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
-    testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.1'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
     implementation project(path: ':opencv')
 }

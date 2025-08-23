@@ -75,14 +75,15 @@ int main(int argc, char** argv)
 		fps = defaultFps;
 	unsigned delay = 1000 / fps;
 
-	int window_size = cimbar::Config::image_size() + 32;
-	if (!initialize_GL(window_size, window_size))
+	int window_size_x = cimbar::Config::image_size_x() + 32;
+	int window_size_y = cimbar::Config::image_size_y() + 32;
+	if (cimbare_init_window(window_size_x, window_size_y) < 0)
 	{
 		std::cerr << "failed to create window :(" << std::endl;
 		return 70;
 	}
-
-	configure(colorBits, ecc, compressionLevel, legacy_mode);
+	cimbare_auto_scale_window();
+	cimbare_configure(colorBits, ecc, compressionLevel, legacy_mode);
 
 	std::chrono::time_point start = std::chrono::high_resolution_clock::now();
 	while (true)
@@ -93,18 +94,19 @@ int main(int argc, char** argv)
 			// TODO: maybe delay is the wrong thing to do here. Might be best to just kick out any files that fail to read?
 			// we can then error out properly if all inputs are bad, which would be nice.
 			{
-				string contents = File(infiles[i]).read_all();
+				const string& filename = infiles[i];
+				string contents = File(filename).read_all();
 				if (contents.empty())
 				{
-					std::cerr << "failed to read file " << infiles[i] << std::endl;
+					std::cerr << "failed to read file " << filename << std::endl;
 					continue;
 				}
 
 				// start encode_id is 109. This is mostly unimportant (it only needs to wrap between [0,127]), but useful
 				// for the decoder -- because it gives it a better distribution of colors in the first frame header it sees.
-				if (!encode(reinterpret_cast<unsigned char*>(contents.data()), contents.size(), static_cast<int>(i+109)))
+				if (cimbare_encode(reinterpret_cast<unsigned char*>(contents.data()), contents.size(), filename.data(), filename.size(), static_cast<int>(i+109)) < 0)
 				{
-					std::cerr << "failed to encode file " << infiles[i] << std::endl;
+					std::cerr << "failed to encode file " << filename << std::endl;
 					continue;
 				}
 			}
@@ -113,10 +115,10 @@ int main(int argc, char** argv)
 			int frameCount = 0;
 			do {
 				start = wait_for_frame_time(delay, start);
-				if (render() < 0)
+				if (cimbare_render() < 0)
 					return 0;
 			}
-			while (++frameCount == next_frame()); // when next_frame() finally loops, we roll to the next file
+			while (++frameCount == cimbare_next_frame()); // when next_frame() finally loops, we roll to the next file
 		}
 
 	return 0; // should never reach here

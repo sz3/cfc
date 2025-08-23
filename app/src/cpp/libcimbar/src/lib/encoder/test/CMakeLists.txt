@@ -8,6 +8,7 @@ set (SOURCES
 	EncoderTest.cpp
 	EncoderRoundTripTest.cpp
 	aligned_streamTest.cpp
+	escrow_buffer_writerTest.cpp
 	reed_solomon_streamTest.cpp
 )
 
@@ -27,6 +28,7 @@ add_test(encoder_test encoder_test)
 target_link_libraries(encoder_test
 
 	cimb_translator
+	extractor
 
 	correct_static
 	wirehair

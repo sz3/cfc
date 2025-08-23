@@ -1,8 +1,12 @@
 /* This code is subject to the terms of the Mozilla Public License, v.2.0. http://mozilla.org/MPL/2.0/. */
 #pragma once
 
+#include "Deskewer.h"
+#include "Scanner.h"
+#include "util/vec_xy.h"
+
 #include <opencv2/opencv.hpp>
-#include <string>
+#include <vector>
 
 class Extractor
 {
@@ -12,14 +16,29 @@ public:
 	static constexpr int NEEDS_SHARPEN = 2;
 
 public:
-	Extractor(unsigned image_size=0, unsigned anchor_size=0);
+	Extractor(cimbar::vec_xy image_size={}, unsigned anchor_size=0);
 
-	int extract(const cv::Mat& img, cv::Mat& out);
-	int extract(const cv::UMat& img, cv::UMat& out);
-	int extract(std::string read_path, cv::Mat& out);
-	int extract(std::string read_path, std::string write_path);
+	template <typename MAT>
+	int extract(const MAT& img, MAT& out);
 
 protected:
-	unsigned _imageSize;
+	cimbar::vec_xy _imageSize;
 	unsigned _anchorSize;
 };
+
+template <typename MAT>
+inline int Extractor::extract(const MAT& img, MAT& out)
+{
+	Scanner scanner(img);
+	std::vector<Anchor> points = scanner.scan();
+	if (points.size() < 4)
+		return FAILURE;
+
+	Corners corners(points);
+	Deskewer de(_imageSize, _anchorSize);
+	out = de.deskew(img, corners);
+
+	if ( !corners.is_granular_scale(_imageSize) )
+		return NEEDS_SHARPEN;
+	return SUCCESS;
+}

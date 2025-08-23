@@ -15,7 +15,8 @@ class window_glfw
 {
 public:
 	window_glfw(unsigned width, unsigned height, std::string title)
-	    : _width(width)
+		: _width(width)
+		, _height(height)
 	{
 		if (!glfwInit())
 		{
@@ -32,7 +33,7 @@ public:
 		glfwMakeContextCurrent(_w);
 		glfwSwapInterval(1);
 
-		_display = std::make_shared<cimbar::gl_2d_display>(width, height);
+		_display = std::make_shared<cimbar::gl_2d_display>(std::min(width, height));
 		glGenTextures(1, &_texid);
 		init_opengl(width, height);
 	}
@@ -40,7 +41,10 @@ public:
 	~window_glfw()
 	{
 		if (_w)
+		{
 			glfwDestroyWindow(_w);
+			_w = nullptr;
+		}
 		if (_texid)
 			glDeleteTextures(1, &_texid);
 		glfwTerminate();
@@ -60,8 +64,15 @@ public:
 	{
 		if (!is_good())
 			return;
+		glfwSetWindowAspectRatio(_w, _width, _height);
 		auto fun = [](GLFWwindow*, int w, int h){ glViewport(0, 0, w, h); };
 		glfwSetWindowSizeCallback(_w, fun);
+	}
+
+	void resize(unsigned width, unsigned height)
+	{
+		if (_w)
+			glfwSetWindowSize(_w, width, height);
 	}
 
 	void rotate(unsigned i=1)
@@ -108,6 +119,11 @@ public:
 		return _width;
 	}
 
+	unsigned height() const
+	{
+		return _height;
+	}
+
 protected:
 	void init_opengl(int width, int height)
 	{
@@ -127,10 +143,11 @@ protected:
 	}
 
 protected:
-	GLFWwindow* _w;
+	GLFWwindow* _w = nullptr;
 	GLuint _texid;
 	std::shared_ptr<cimbar::gl_2d_display> _display;
 	unsigned _width;
+	unsigned _height;
 	bool _good = true;
 };
 

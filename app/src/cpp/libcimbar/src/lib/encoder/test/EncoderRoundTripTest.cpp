@@ -3,7 +3,7 @@
 #include "TestHelpers.h"
 
 #include "encoder/Decoder.h"
-#include "encoder/Encoder.h"
+#include "encoder/EncoderPlus.h"
 
 #include "compression/zstd_decompressor.h"
 #include "fountain/fountain_decoder_sink.h"
@@ -28,26 +28,41 @@ TEST_CASE( "EncoderRoundTripTest/testFountain.Pad", "[unit]" )
 	}
 
 	// will be padded so the fountain encoding is happy. The encoded image looks suspiciously non-random!
-	Encoder enc(30, 4, 2);
+	EncoderPlus enc(30, 4, 2);
 	assertEquals( 1, enc.encode_fountain(inputFile, outPrefix) );
 
-	uint64_t hash = 0xeecc8800efce8c48;
+	uint64_t hash = 0xefcc8800efcea808;
 	std::string path = fmt::format("{}_0.png", outPrefix);
 	cv::Mat encodedImg = cv::imread(path);
 	cv::cvtColor(encodedImg, encodedImg, cv::COLOR_BGR2RGB);
 	assertEquals( hash, image_hash::average_hash(encodedImg) );
 
-	// decoder
-	Decoder dec(30);
-	fountain_decoder_sink<cimbar::zstd_decompressor<std::ofstream>> fds(tempdir.path(), cimbar::Config::fountain_chunk_size(30, 6, false));
+	SECTION ("default filename") {
+		// decoder
+		Decoder dec(30);
+		fountain_decoder_sink fds(cimbar::Config::fountain_chunk_size(30, 6, false), write_on_store<cimbar::zstd_decompressor<std::ofstream>>(tempdir.path()));
 
-	unsigned bytesDecoded = dec.decode_fountain(encodedImg, fds, 1);
-	assertEquals( 7500, bytesDecoded );
+		unsigned bytesDecoded = dec.decode_fountain(encodedImg, fds, 1);
+		assertEquals( 7500, bytesDecoded );
 
-	std::string decodedContents = File(tempdir.path() / "0.626").read_all();
-	assertEquals( "hello", decodedContents );
+		std::string decodedContents = File(tempdir.path() / "0.626").read_all();
+		assertEquals( "hello", decodedContents );
 
-	assertEquals( 1, fds.num_done() );
+		assertEquals( 1, fds.num_done() );
+	}
+
+	SECTION ("parsed filename") {
+		Decoder dec(30);
+		fountain_decoder_sink fds(cimbar::Config::fountain_chunk_size(30, 6, false), decompress_on_store<std::ofstream>(tempdir.path()));
+
+		unsigned bytesDecoded = dec.decode_fountain(encodedImg, fds, 1);
+		assertEquals( 7500, bytesDecoded );
+
+		std::string decodedContents = File(tempdir.path() / "hello.txt").read_all();
+		assertEquals( "hello", decodedContents );
+
+		assertEquals( 1, fds.num_done() );
+	}
 }
 
 TEST_CASE( "EncoderRoundTripTest/testFountain.SinkMismatch", "[unit]" )
@@ -63,11 +78,11 @@ TEST_CASE( "EncoderRoundTripTest/testFountain.SinkMismatch", "[unit]" )
 	}
 
 	// will be padded so the fountain encoding is happy. The encoded image looks suspiciously non-random!
-	Encoder enc(30, 4, 2);
+	EncoderPlus enc(30, 4, 2);
 	enc.set_legacy_mode();
 	assertEquals( 1, enc.encode_fountain(inputFile, outPrefix) );
 
-	uint64_t hash = 0xaecc8c00efce8c28;
+	uint64_t hash = 0xaecc8800efce8c28;
 	std::string path = fmt::format("{}_0.png", outPrefix);
 	cv::Mat encodedImg = cv::imread(path);
 	cv::cvtColor(encodedImg, encodedImg, cv::COLOR_BGR2RGB);
@@ -78,7 +93,7 @@ TEST_CASE( "EncoderRoundTripTest/testFountain.SinkMismatch", "[unit]" )
 	// sink with a mismatched fountain_chunk_size
 	// importantly, the sink expects a *smaller* chunk than we'll give it...
 	// because that's a more interesting test...
-	fountain_decoder_sink<cimbar::zstd_decompressor<std::ofstream>> fds(tempdir.path(), cimbar::Config::fountain_chunk_size(30, 6, false));
+	fountain_decoder_sink fds(cimbar::Config::fountain_chunk_size(30, 6, false), write_on_store<cimbar::zstd_decompressor<std::ofstream>>(tempdir.path()));
 
 	unsigned bytesDecoded = dec.decode_fountain(encodedImg, fds, 0);
 	assertEquals( 7500, bytesDecoded );
@@ -94,14 +109,14 @@ TEST_CASE( "EncoderRoundTripTest/testStreaming", "[unit]" )
 	std::ifstream infile(TestCimbar::getProjectDir() + "/LICENSE");
 
 	// create encoder
-	Encoder enc(30, 4, 2);
-	fountain_encoder_stream::ptr fes = enc.create_fountain_encoder(infile);
+	EncoderPlus enc(30, 4, 2);
+	fountain_encoder_stream::ptr fes = enc.create_fountain_encoder(infile, "");
 	assertTrue( fes );
 	assertTrue( fes->good() );
 
 	// create decoder
 	Decoder dec(30);
-	fountain_decoder_sink<cimbar::zstd_decompressor<std::ofstream>> fds(tempdir.path(), cimbar::Config::fountain_chunk_size(30, 6, false));
+	fountain_decoder_sink fds(cimbar::Config::fountain_chunk_size(30, 6, false), write_on_store<cimbar::zstd_decompressor<std::ofstream>>(tempdir.path()));
 
 	// encode frames, then pass to decoder
 	for (int i = 0; i < 100; ++i)

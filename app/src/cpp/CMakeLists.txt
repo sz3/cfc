@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.4.1)
 
 project ( cfc )
 
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -mllvm -inline-threshold=5000")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -mllvm -inline-threshold=1500 -flto=thin")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -mllvm -inline-threshold=1500 -flto=thin")
 
 # opencv stuff
 add_library( lib_opencv SHARED IMPORTED )

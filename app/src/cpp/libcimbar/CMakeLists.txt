@@ -22,6 +22,7 @@ set (PROJECTS
 	src/lib/cimbar_js
 	src/lib/compression
 	src/lib/encoder
+	src/lib/extractor
 	src/lib/fountain
 	src/lib/gui
 	src/lib/image_hash
@@ -36,13 +37,6 @@ set (PROJECTS
 	src/third_party_lib/wirehair
 	src/third_party_lib/zstd
 )
-
-if(NOT DEFINED USE_WASM)
-set(PROJECTS
-	${PROJECTS}
-	src/lib/extractor
-)
-endif()
 
 include_directories(
 	${libcimbar_SOURCE_DIR}/src/lib
