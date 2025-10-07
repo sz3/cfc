@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<selector xmlns:android="http://schemas.android.com/apk/res/android">
+<selector xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item android:state_checked="true"
-        android:state_activated="true"
+        app:state_mode4c="true"
         android:drawable="@drawable/ic_mode4c"/>
 
     <item android:state_checked="true"
-        android:state_activated="false"
+        app:state_modebm="true"
+        android:drawable="@drawable/ic_color8"/>
+
+    <item android:state_checked="true"
         android:drawable="@drawable/ic_modeb"/>
 
     <item android:state_checked="false"
