@@ -14,8 +14,6 @@ set(SOURCES
 
 	cimbar_recv_js.h
 	cimbar_recv_js.cpp
-	cimbar_zstd_js.h
-	cimbar_zstd_js.cpp
 )
 endif()
 
@@ -52,30 +50,31 @@ else()
 endif()
 
 set (LINK_WASM_EXPORTED_FUNCTIONS
-	"_malloc",
-	"_free",
-	"_cimbare_render",
-	"_cimbare_next_frame",
-	"_cimbare_encode",
-	"_cimbare_configure",
-	"_cimbare_get_aspect_ratio"
+	"_malloc"
+	, "_free"
+	, "_cimbare_render"
+	, "_cimbare_next_frame"
+	, "_cimbare_init_encode"
+	, "_cimbare_encode"
+	, "_cimbare_encode_bufsize"
+	, "_cimbare_configure"
+	, "_cimbare_rotate_window"
+	, "_cimbare_get_aspect_ratio"
 )
 
 if(NOT USE_WASM EQUAL "2")
 set(LINK_WASM_EXPORTED_FUNCTIONS
 	${LINK_WASM_EXPORTED_FUNCTIONS}
 
-	,"_cimbard_get_report",
-	"_cimbard_scan_extract_decode",
-	"_cimbard_fountain_decode",
-	"_cimbard_get_bufsize",
-	"_cimbard_get_filesize",
-	"_cimbard_get_filename",
-	"_cimbard_finish_copy",
-	"_cimbard_configure_decode",
-	"_cimbarz_init_decompress",
-	"_cimbarz_get_bufsize",
-	"_cimbarz_decompress_read"
+	, "_cimbard_get_report"
+	, "_cimbard_get_bufsize"
+	, "_cimbard_scan_extract_decode"
+	, "_cimbard_fountain_decode"
+	, "_cimbard_get_filesize"
+	, "_cimbard_get_filename"
+	, "_cimbard_get_decompress_bufsize"
+	, "_cimbard_decompress_read"
+	, "_cimbard_configure_decode"
 )
 endif()
 

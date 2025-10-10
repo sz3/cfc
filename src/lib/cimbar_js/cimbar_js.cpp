@@ -2,6 +2,7 @@
 #include "cimbar_js.h"
 
 #include "cimb_translator/Config.h"
+#include "compression/zstd_compressor.h"
 #include "encoder/Encoder.h"
 #include "gui/window_glfw.h"
 #include "util/byte_istream.h"
@@ -15,14 +16,17 @@ namespace {
 	std::shared_ptr<fountain_encoder_stream> _fes;
 	std::optional<cv::Mat> _next;
 
+	// compressing the file
+	std::unique_ptr<cimbar::zstd_compressor<std::stringstream>> _comp;
+
 	int _frameCount = 0;
+	// start encode_id is 109. This is mostly unimportant (it only needs to wrap between [0,127]), but useful
+	// for the decoder -- because it gives it a better distribution of colors in the first frame header it sees.
 	uint8_t _encodeId = 109;
 
 	// settings, will be overriden by first call to configure()
-	unsigned _ecc = cimbar::Config::ecc_bytes();
-	unsigned _colorBits = cimbar::Config::color_bits();
+	int _modeVal = 68;
 	int _compressionLevel = cimbar::Config::compression_level();
-	bool _legacyMode = false;
 }
 
 extern "C" {
@@ -43,6 +47,20 @@ int cimbare_init_window(int width, int height)
 	if (!_window or !_window->is_good())
 		return -1;
 
+	return 0;
+}
+
+int cimbare_rotate_window(bool rotate)
+{
+	if (!_window or !_window->is_good())
+		return -1;
+
+	_window->rotate(0);
+	if (rotate) // 90 degrees
+	{
+		_window->rotate();
+		_window->rotate();
+	}
 	return 0;
 }
 
@@ -104,16 +122,17 @@ int cimbare_next_frame()
 		_frameCount = 0;
 	}
 
-	Encoder enc(_ecc, cimbar::Config::symbol_bits(), _colorBits);
-	if (_legacyMode)
-		enc.set_legacy_mode();
-
+	Encoder enc;
 	enc.set_encode_id(_encodeId);
 	_next = enc.encode_next(*_fes, _window? cimbar::vec_xy{_window->width(), _window->height()} : cimbar::vec_xy{});
 	return ++_frameCount;
 }
 
-int cimbare_encode(const unsigned char* buffer, unsigned size, const char* filename, unsigned fnsize, int encode_id)
+// maybe init_encode w/ filename,size,encode_id,
+// then encode() with buff,size? ... when size < chunksize (or size ==0), we're done
+// return 0 on done, 1 iff work to continue?
+
+int cimbare_init_encode(const char* filename, unsigned fnsize, int encode_id)
 {
 	_frameCount = 0;
 	if (!FountainInit::init())
@@ -122,32 +141,61 @@ int cimbare_encode(const unsigned char* buffer, unsigned size, const char* filen
 		return -5;
 	}
 
-	Encoder enc(_ecc, cimbar::Config::symbol_bits(), _colorBits);
-	if (_legacyMode)
-		enc.set_legacy_mode();
-
 	if (encode_id < 0)
-		enc.set_encode_id(++_encodeId); // increment _encodeId every time we change files
+		++_encodeId; // increment _encodeId every time we change files
 	else
-		enc.set_encode_id(static_cast<uint8_t>(encode_id));
+		_encodeId = encode_id;
 
-	cimbar::byte_istream bis(reinterpret_cast<const char*>(buffer), size);
-	_fes = enc.create_fountain_encoder(bis, std::string_view(filename, fnsize), _compressionLevel);
+	_comp = std::make_unique<cimbar::zstd_compressor<std::stringstream>>();
+	if (!_comp)
+		return -1;
 
+	_comp->set_compression_level(_compressionLevel);
+
+	if (fnsize > 0 and filename != nullptr)
+		_comp->write_header(filename, fnsize);
+
+	_fes.reset();
+	return 0;
+}
+
+int cimbare_encode_bufsize()
+{
+	return cimbar::zstd_compressor<std::stringstream>::CHUNK_SIZE;
+}
+
+int cimbare_encode(const unsigned char* buffer, unsigned size)
+{
+	if (!_comp)
+		return -1;
+
+	if (size > 0)
+	{
+		if (!_comp->write(reinterpret_cast<const char*>(buffer), size))
+			return -2;
+	}
+	if (size == cimbare_encode_bufsize())
+		return 1; // more to do
+
+	// otherwise, we're ready
+	unsigned fountainChunkSize = cimbar::Config::fountain_chunk_size();
+	size_t compressedSize = _comp->size();
+	if (compressedSize < fountainChunkSize)
+		_comp->pad(fountainChunkSize - compressedSize + 1);
+
+	// create the encoder stream
+	_fes = fountain_encoder_stream::create(*_comp, fountainChunkSize, _encodeId);
+	_comp.reset();
 	if (!_fes)
-		return -1; // return -1 plz
+		return -3;
 
 	_next.reset();
 	return 0;
 }
 
-int cimbare_configure(unsigned color_bits, unsigned ecc, int compression, bool legacy_mode)
+int cimbare_configure(int mode_val, int compression)
 {
-	// defaults
-	if (color_bits > 3)
-		color_bits = cimbar::Config::color_bits();
-	if (ecc >= 150)
-		ecc = cimbar::Config::ecc_bytes();
+	cimbar::Config::update(mode_val);
 	if (compression < 0 or compression > 22)
 		compression = cimbar::Config::compression_level();
 
@@ -159,19 +207,18 @@ int cimbare_configure(unsigned color_bits, unsigned ecc, int compression, bool l
 		return initRes;
 
 	// check if we need to refresh the stream
-	bool refresh = (color_bits != _colorBits or ecc != _ecc or compression != _compressionLevel or legacy_mode != _legacyMode);
+	bool refresh = (mode_val != _modeVal or compression != _compressionLevel);
 	if (refresh)
 	{
 		// update config
-		_colorBits = color_bits;
-		_ecc = ecc;
+		_modeVal = mode_val;
 		_compressionLevel = compression;
-		_legacyMode = legacy_mode;
+		cimbar::Config::update(_modeVal);
 
 		// try to refresh the stream
 		if (_window and _fes)
 		{
-			unsigned buff_size_new = cimbar::Config::fountain_chunk_size(_ecc, cimbar::Config::symbol_bits() + _colorBits, _legacyMode);
+			unsigned buff_size_new = cimbar::Config::fountain_chunk_size();
 			if (!_fes->restart_and_resize_buffer(buff_size_new))
 			{
 				// if the data is too small, we should throw out _fes -- and clear the canvas.
