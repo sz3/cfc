@@ -99,7 +99,18 @@ inline bool MultiThreadedDecoder::add(cv::Mat mat)
     ++count;
     unsigned modeVal = _modeVal;
     if (modeVal == 0)
-        modeVal = (count%2 == 0)? 4 : 68;
+    {
+        switch (count%3) {
+            case 1:
+                modeVal = 4;
+                break;
+            case 2:
+                modeVal = 67;
+                break;
+            default:
+                modeVal = 68;
+        }
+    }
     return _pool.try_execute( [&, mat, modeVal] () {
 		cimbar::Config::update(modeVal);
 		cv::Mat img;

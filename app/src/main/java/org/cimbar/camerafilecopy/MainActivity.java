@@ -37,7 +37,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     private static final int CREATE_FILE = 11;
 
     private CameraBridgeViewBase mOpenCvCameraView;
-    private ToggleButton mModeSwitch;
+    private ModeSelToggle mModeSwitch;
     private int modeVal = 0;
     private int detectedMode = 68;
     private String dataPath;
@@ -81,7 +81,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
         mOpenCvCameraView.setCvCameraViewListener(this);
 
-        mModeSwitch = (ToggleButton) findViewById(R.id.mode_switch);
+        mModeSwitch = (ModeSelToggle) findViewById(R.id.mode_switch);
         mModeSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
@@ -160,26 +160,22 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 
         // res will contain a file path if we completed a transfer. Ask the user where to save it
         if (res.startsWith("/")) {
-            if (res.length() >= 2 && res.charAt(1) == '4') {
+            if (res.length() == 2 && res.charAt(1) == '4') {
                 detectedMode = 4;
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        mModeSwitch.setActivated(true);
-                        mModeSwitch.setChecked(true);
-                    }
-                });
+            }
+            else if (res.length() == 3 && res.charAt(1) == '6' && res.charAt(2) == '7') {
+                detectedMode = 67;
             }
             else {
                 detectedMode = 68;
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        mModeSwitch.setActivated(false);
-                        mModeSwitch.setChecked(true);
-                    }
-                });
             }
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mModeSwitch.setChecked(true);
+                    mModeSwitch.setModeVal(detectedMode);
+                }
+            });
 
         }
         else if (!res.isEmpty()) {

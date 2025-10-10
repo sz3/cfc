@@ -8,7 +8,7 @@
 
     <item android:state_checked="true"
         app:state_modebm="true"
-        android:drawable="@drawable/ic_color8"/>
+        android:drawable="@drawable/ic_modebm"/>
 
     <item android:state_checked="true"
         android:drawable="@drawable/ic_modeb"/>
