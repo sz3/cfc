@@ -8,8 +8,8 @@ android {
         applicationId "org.cimbar.camerafilecopy"
         minSdkVersion 21
         targetSdkVersion 35
-        versionCode 20
-        versionName "0.6.2d"
+        versionCode 21
+        versionName "0.6.3"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         ndk {
             abiFilters "arm64-v8a"
