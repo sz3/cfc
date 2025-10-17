@@ -97,8 +97,22 @@ inline int MultiThreadedDecoder::do_extract(const cv::Mat& mat, cv::Mat& img)
 inline bool MultiThreadedDecoder::add(cv::Mat mat)
 {
     ++count;
-    bool legacy_mode = _modeVal == 4 or (_modeVal == 0 and count%2 == 0);
-    return _pool.try_execute( [&, mat, legacy_mode] () {
+    unsigned modeVal = _modeVal;
+    if (modeVal == 0)
+    {
+        switch (count%3) {
+            case 1:
+                modeVal = 4;
+                break;
+            case 2:
+                modeVal = 67;
+                break;
+            default:
+                modeVal = 68;
+        }
+    }
+    return _pool.try_execute( [&, mat, modeVal] () {
+		cimbar::Config::update(modeVal);
 		cv::Mat img;
 		int res = do_extract(mat, img);
 		if (res == Extractor::FAILURE)
@@ -107,15 +121,14 @@ inline bool MultiThreadedDecoder::add(cv::Mat mat)
 		// if extracted image is small, we'll need to run some filters on it
 		clock_t begin = clock();
 		bool should_preprocess = (res == Extractor::NEEDS_SHARPEN);
-		int color_correction = legacy_mode? 1 : 2;
-		unsigned color_mode = legacy_mode? 0 : 1;
-		unsigned decodeRes = _dec.decode_fountain(img, _writer, color_mode, should_preprocess, color_correction);
+		int color_correction = modeVal==4? 1 : 2;
+		unsigned decodeRes = _dec.decode_fountain(img, _writer, should_preprocess, color_correction);
 		bytes += decodeRes;
 		++decoded;
 		decodeTicks += clock() - begin;
 
 		if (decodeRes and _modeVal == 0)
-            _detectedMode = legacy_mode? 4 : 68;
+			_detectedMode = modeVal;
 
 		if (decodeRes >= 6900)
 			++perfect;
@@ -138,7 +151,7 @@ inline void MultiThreadedDecoder::stop()
 
 unsigned MultiThreadedDecoder::fountain_chunk_size(int mode_val)
 {
-	return cimbar::Config::fountain_chunk_size(cimbar::Config::ecc_bytes(), cimbar::Config::symbol_bits() + cimbar::Config::color_bits(), mode_val==4);
+	return cimbar::Config::temp_conf(mode_val).fountain_chunk_size();
 }
 
 inline int MultiThreadedDecoder::mode() const

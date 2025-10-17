@@ -55,31 +55,22 @@ var Sink = function () {
     reassemble_file: function (id) {
       const size = Module._cimbard_get_filesize(id);
       //alert("we did it!?! " + size);
-      const dataPtr = Module._malloc(size);
-      const buff = new Uint8Array(Module.HEAPU8.buffer, dataPtr, size);
       try {
-        var res = Module._cimbard_finish_copy(id, buff.byteOffset, buff.length);
-        if (res < 0) {
+        var name = id + "." + size;
+        const fnsize = Module._cimbard_get_filename(id, _errBuff, _errBuffSize);
+        if (fnsize < 0) {
           alert("reassemble_file failed :(" + res);
           console.log("we biffed it. :( " + res);
           Recv.set_HTML("errorbox", "reassemble_file failed :( " + res);
         }
-        else {
-          var name = id + "." + size;
-          const fnsize = Module._cimbard_get_filename(buff.byteOffset, buff.length, _errBuff, _errBuffSize);
-          if (fnsize > 0) {
-            const temparr = new Uint8Array(Module.HEAPU8.buffer, _errBuff, fnsize);
-            name = new TextDecoder("utf-8").decode(temparr);
-          }
-          //Recv.download_bytes(buff, size + ".zst"); // size -> name, eventually
-          Zstd.decompress(name, buff);
+        else if (fnsize > 0) {
+          const temparr = new Uint8Array(Module.HEAPU8.buffer, _errBuff, fnsize);
+          name = new TextDecoder("utf-8").decode(temparr);
         }
+        Zstd.decompress(name, id);
       } catch (error) {
         console.log("failed finish copy or download?? " + error);
       }
-      // this needs to happen after decompress() completes
-      // currently decompress is sync, so it's fine. But...
-      Module._free(dataPtr);
     }
   };
 }();
@@ -386,22 +377,36 @@ var Recv = function () {
     },
 
     setMode: function (mode_str) {
-      const modeVal = (mode_str == "4C") ? 4 : 68;
-      Module._cimbard_configure_decode(255, modeVal);
+      let modeVal = 68;
+      if (mode_str == "4C") {
+        modeVal = 4;
+      }
+      else if (mode_str == "Bm") {
+        modeVal = 67;
+      }
+      Module._cimbard_configure_decode(modeVal);
       for (let i = 0; i < _workers.length; i++) {
         // cal config decode within the workers as well
-        _workers[i].postMessage({ config: true, color_bits: 255, mode_val: modeVal });
+        _workers[i].postMessage({ config: true, mode_val: modeVal });
       }
 
       var nav = document.getElementById("nav-container");
-      if (mode_str == "4C") {
+      if (modeVal == 4) {
         nav.classList.remove("mode-b");
         nav.classList.add("mode-4c");
-      } else if (mode_str == "B") {
+        nav.classList.remove("mode-b");
+        nav.classList.remove("mode-bm");
+      } else if (modeVal == 68) {
         nav.classList.add("mode-b");
+        nav.classList.remove("mode-bm");
+        nav.classList.remove("mode-4c");
+      } else if (modeVal == 67) {
+        nav.classList.add("mode-bm");
+        nav.classList.remove("mode-b");
         nav.classList.remove("mode-4c");
       } else {
         nav.classList.remove("mode-b");
+        nav.classList.remove("mode-bm");
         nav.classList.remove("mode-4c");
       }
     },

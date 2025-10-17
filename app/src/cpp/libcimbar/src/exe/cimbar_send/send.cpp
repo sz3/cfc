@@ -42,7 +42,7 @@ int main(int argc, char** argv)
 		("c,colorbits", "Color bits. [0-3]", cxxopts::value<int>()->default_value(turbo::str::str(colorBits)))
 		("e,ecc", "ECC level", cxxopts::value<unsigned>()->default_value(turbo::str::str(ecc)))
 		("f,fps", "Target FPS", cxxopts::value<unsigned>()->default_value(turbo::str::str(defaultFps)))
-		("m,mode", "Select a cimbar mode. B is new to 0.6.x. 4C is the 0.5.x config. [B,4C]", cxxopts::value<string>()->default_value("4C"))
+		("m,mode", "Select a cimbar mode. B is new to 0.6.x. 4C is the 0.5.x config. [B,Bm,4C]", cxxopts::value<string>()->default_value("4C"))
 		("z,compression", "Compression level. 0 == no compression.", cxxopts::value<int>()->default_value(turbo::str::str(compressionLevel)))
 		("h,help", "Print usage")
 	;
@@ -63,11 +63,14 @@ int main(int argc, char** argv)
 	compressionLevel = result["compression"].as<int>();
 	ecc = result["ecc"].as<unsigned>();
 
-	bool legacy_mode = false;
+	unsigned config_mode = 68;
 	if (result.count("mode"))
 	{
 		string mode = result["mode"].as<string>();
-		legacy_mode = (mode == "4c") or (mode == "4C");
+		if (mode == "4c" or mode == "4C")
+			config_mode = 4;
+		else if (mode == "Bm" or mode == "BM")
+			config_mode = 67;
 	}
 
 	unsigned fps = result["fps"].as<unsigned>();
@@ -83,7 +86,7 @@ int main(int argc, char** argv)
 		return 70;
 	}
 	cimbare_auto_scale_window();
-	cimbare_configure(colorBits, ecc, compressionLevel, legacy_mode);
+	cimbare_configure(config_mode, compressionLevel);
 
 	std::chrono::time_point start = std::chrono::high_resolution_clock::now();
 	while (true)
@@ -102,11 +105,21 @@ int main(int argc, char** argv)
 					continue;
 				}
 
-				// start encode_id is 109. This is mostly unimportant (it only needs to wrap between [0,127]), but useful
-				// for the decoder -- because it gives it a better distribution of colors in the first frame header it sees.
-				if (cimbare_encode(reinterpret_cast<unsigned char*>(contents.data()), contents.size(), filename.data(), filename.size(), static_cast<int>(i+109)) < 0)
+				if (cimbare_init_encode(filename.data(), filename.size(), -1) < 0)
 				{
-					std::cerr << "failed to encode file " << filename << std::endl;
+					std::cerr << "failed to 'init encode' file " << filename << std::endl;
+					continue; // abort??
+				}
+
+				int res = cimbare_encode(reinterpret_cast<unsigned char*>(contents.data()), contents.size());
+				if (res < 0)
+				{
+					std::cerr << "failed to compress file " << filename << std::endl;
+					continue;
+				}
+				else if (res == 1 and cimbare_encode(nullptr, 0) != 0) // fallback finish encode
+				{
+					std::cerr << "failed to encode for file" << filename << std::endl;
 					continue;
 				}
 			}
