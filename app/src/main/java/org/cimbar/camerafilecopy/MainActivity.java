@@ -75,6 +75,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         );
 
         this.dataPath = this.getFilesDir().getPath();
+        //this.dataPath = this.getExternalFilesDir(null).getPath(); // keep having to reinvent the wheel when I need this
 
         setContentView(R.layout.activity_main);
         mOpenCvCameraView = findViewById(R.id.main_surface);
@@ -111,6 +112,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     @Override
     public void onStart() {
         super.onStart();
+        mModeSwitch.setChecked(false);
+        modeVal = 0;
         Toast.makeText(this, "Encode data at https://cimbar.org! :)",  Toast.LENGTH_LONG).show();
     }
 
