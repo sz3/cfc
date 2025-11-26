@@ -11,6 +11,10 @@
         android:drawable="@drawable/ic_modebm"/>
 
     <item android:state_checked="true"
+        app:state_modebw="true"
+        android:drawable="@drawable/ic_modebw"/>
+
+    <item android:state_checked="true"
         android:drawable="@drawable/ic_modeb"/>
 
     <item android:state_checked="false"

@@ -3,5 +3,6 @@
     <declare-styleable name="ModeSelCheckbox">
         <attr name="state_mode4c" format="boolean"/>
         <attr name="state_modebm" format="boolean"/>
+        <attr name="state_modebw" format="boolean"/>
     </declare-styleable>
 </resources>
