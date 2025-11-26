@@ -8,6 +8,7 @@ public class ModeSelToggle extends AppCompatToggleButton {
 
     private static final int[] STATE_MODE4C = { R.attr.state_mode4c };
     private static final int[] STATE_MODEBM = { R.attr.state_modebm };
+    private static final int[] STATE_MODEBU = { R.attr.state_modebu };
 
     private int mModeVal = 0;
 
@@ -42,6 +43,9 @@ public class ModeSelToggle extends AppCompatToggleButton {
             switch (mModeVal) {
                 case 4:
                     mergeDrawableStates(drawableState, STATE_MODE4C);
+                    break;
+                case 66:
+                    mergeDrawableStates(drawableState, STATE_MODEBU);
                     break;
                 case 67:
                     mergeDrawableStates(drawableState, STATE_MODEBM);
