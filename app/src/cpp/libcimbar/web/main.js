@@ -1,11 +1,16 @@
 var Main = function () {
 
+  // configurable
   var _interval = 66;
-  var _pause = 0;
+  var _colorBalance = false;
 
+  // internal
+  var _pause = 0;
   var _showStats = false;
   var _counter = 0;
   var _renderTime = 0;
+
+  var _wakeLock = undefined;
 
   // cached
   var _idealRatio = 1;
@@ -162,12 +167,28 @@ var Main = function () {
       Main.setHTML("current-file", filename);
     },
 
+    prevent_sleep: async function () {
+      if (_wakeLock) {
+        return;
+      }
+      const requestWakeLock = async () => {
+        try {
+          _wakeLock = await navigator.wakeLock.request('screen');
+          console.log('got wake lock!');
+          _wakeLock.addEventListener('release', () => {
+            _wakeLock = undefined;
+          });
+        } catch (err) { }
+      };
+      requestWakeLock();
+    },
+
     encode_bytes: function (wasmData) {
       var res = Module._cimbare_encode(wasmData.byteOffset, wasmData.length);
       console.log("encode returned " + res);
 
       if (res == 0) {
-        Main.setActive(true);
+        Main.setActive();
       }
     },
 
@@ -227,7 +248,7 @@ var Main = function () {
       var start = performance.now();
       if (!Main.isPaused()) {
         Module._cimbare_render();
-        var frameCount = Module._cimbare_next_frame();
+        var frameCount = Module._cimbare_next_frame(_colorBalance);
       }
 
       var elapsed = performance.now() - start;
@@ -237,6 +258,10 @@ var Main = function () {
       if (_showStats && frameCount) {
         _renderTime += elapsed;
         Main.setHTML("status", elapsed + " : " + frameCount + " : " + Math.ceil(_renderTime / frameCount));
+      }
+
+      if (!Main.isPaused() && _counter % 16 == 0) {
+        setTimeout(Main.prevent_sleep, 0);
       }
     },
 
@@ -252,6 +277,9 @@ var Main = function () {
       if (mode_str == "4C") {
         modeVal = 4;
       }
+      else if (mode_str == "Bu") {
+        modeVal = 66;
+      }
       else if (mode_str == "Bm") {
         modeVal = 67;
       }
@@ -265,19 +293,36 @@ var Main = function () {
         nav.classList.add("mode-4c");
         nav.classList.remove("mode-b");
         nav.classList.remove("mode-bm");
-      } else if (modeVal == 68) {
-        nav.classList.add("mode-b");
+        nav.classList.remove("mode-bu");
+      } else if (modeVal == 66) {
+        nav.classList.add("mode-bu");
+        nav.classList.remove("mode-b");
         nav.classList.remove("mode-bm");
         nav.classList.remove("mode-4c");
       } else if (modeVal == 67) {
         nav.classList.add("mode-bm");
         nav.classList.remove("mode-b");
+        nav.classList.remove("mode-bu");
+        nav.classList.remove("mode-4c");
+      } else if (modeVal == 68) {
+        nav.classList.add("mode-b");
+        nav.classList.remove("mode-bm");
+        nav.classList.remove("mode-bu");
         nav.classList.remove("mode-4c");
       } else {
         nav.classList.remove("mode-b");
         nav.classList.remove("mode-bm");
+        nav.classList.remove("mode-bu");
         nav.classList.remove("mode-4c");
       }
+    },
+
+    setFPS: function (val) {
+      if (!val) {
+        return;
+      }
+      _interval = Math.floor(1000 / val);
+      console.log("new frame delay interval is " + _interval);
     },
 
     setHTML: function (id, msg) {
