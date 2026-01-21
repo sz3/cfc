@@ -56,6 +56,7 @@ protected:
 	turbo::thread_pool _pool;
 	concurrent_fountain_decoder_sink _writer;
 	std::string _dataPath;
+	unsigned _successCondition;
 };
 
 inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path, int mode_val)
@@ -66,6 +67,7 @@ inline MultiThreadedDecoder::MultiThreadedDecoder(std::string data_path, int mod
 	, _pool(_numThreads, 1)
 	, _writer(fountain_chunk_size(mode_val), decompress_on_store<std::ofstream>(data_path, true))
 	, _dataPath(data_path)
+	, _successCondition(cimbar::Config::temp_conf(mode_val).capacity() * .7)
 {
 	FountainInit::init();
 	_pool.start();
@@ -133,7 +135,7 @@ inline bool MultiThreadedDecoder::add(cv::Mat mat)
 		if (decodeRes and _modeVal == 0)
 			_detectedMode = modeVal;
 
-		if (decodeRes >= 6900)
+		if (decodeRes >= _successCondition)
 			++perfect;
 	} );
 }

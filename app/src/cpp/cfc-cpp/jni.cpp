@@ -184,7 +184,7 @@ Java_org_cimbar_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env, jobject
 	cv::Mat img = mat.clone();
 	proc->add(img);
 
-	if (_calls & 32)
+	if (_calls & 31)
 	{
 		clock_t decodeSnapshot = proc->decoded;
 		clock_t perfectSnapshot = proc->perfect;
