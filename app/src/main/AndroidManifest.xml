@@ -4,6 +4,7 @@
           package="org.cimbar.camerafilecopy">
 
     <uses-permission android:name="android.permission.CAMERA"/>
+
     <uses-feature android:name="android.hardware.camera" android:required="true"/>
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="true"/>
 
@@ -21,6 +22,10 @@
 
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+        </activity>
+        <activity android:name=".WebViewActivity"
+            android:screenOrientation="landscape"
+            android:exported="true">
         </activity>
     </application>
 

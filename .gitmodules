@@ -1,0 +1,3 @@
+[submodule "cimbar-js-bits"]
+	path = app/src/main/assets
+	url = https://github.com/sz3/cimbar-js-bits.git
