@@ -125,7 +125,7 @@ namespace {
 	{
 		std::stringstream sstop;
 		sstop << "cfc using " << proc.num_threads() << " thread(s). " << proc.mode() << ":" << proc.detected_mode() << "..." << proc.backlog() << "? ";
-		sstop << (MultiThreadedDecoder::bytes / std::max<double>(1, MultiThreadedDecoder::decoded)) << "b v0.6.3";
+		sstop << (MultiThreadedDecoder::bytes / std::max<double>(1, MultiThreadedDecoder::decoded)) << "b v0.6.4";
 		std::stringstream ssmid;
 		ssmid << "#: " << MultiThreadedDecoder::perfect << " / " << MultiThreadedDecoder::decoded << " / " << MultiThreadedDecoder::scanned << " / " << _calls;
 		std::stringstream ssperf;
@@ -184,7 +184,7 @@ Java_org_cimbar_camerafilecopy_MainActivity_processImageJNI(JNIEnv *env, jobject
 	cv::Mat img = mat.clone();
 	proc->add(img);
 
-	if (_calls & 32)
+	if (_calls & 31)
 	{
 		clock_t decodeSnapshot = proc->decoded;
 		clock_t perfectSnapshot = proc->perfect;

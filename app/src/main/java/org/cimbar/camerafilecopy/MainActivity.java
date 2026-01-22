@@ -81,6 +81,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         );
 
         this.dataPath = this.getFilesDir().getPath();
+        //this.dataPath = this.getExternalFilesDir(null).getPath(); // for manual testing
 
         setContentView(R.layout.activity_main);
         mOpenCvCameraView = findViewById(R.id.main_surface);
@@ -124,6 +125,9 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     public void onStart() {
         super.onStart();
         introToast.show();
+        // reset autodetect
+        mModeSwitch.setChecked(false);
+        modeVal = 0;
     }
 
     @Override
