@@ -100,11 +100,14 @@ inline bool MultiThreadedDecoder::add(cv::Mat mat)
     unsigned modeVal = _modeVal;
     if (modeVal == 0)
     {
-        switch (count%3) {
+        switch (count%4) {
             case 1:
                 modeVal = 4;
                 break;
             case 2:
+                modeVal = 66;
+                break;
+            case 3:
                 modeVal = 67;
                 break;
             default:

@@ -175,6 +175,9 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
             if (res.length() == 2 && res.charAt(1) == '4') {
                 detectedMode = 4;
             }
+            else if (res.length() == 3 && res.charAt(1) == '6' && res.charAt(2) == '6') {
+                detectedMode = 66;
+            }
             else if (res.length() == 3 && res.charAt(1) == '6' && res.charAt(2) == '7') {
                 detectedMode = 67;
             }
