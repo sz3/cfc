@@ -1,15 +1,16 @@
 apply plugin: 'com.android.application'
 
 android {
+    namespace 'org.cimbar.camerafilecopy'
     compileSdkVersion 34
-    buildToolsVersion "30.0.3"
-    ndkVersion "25.2.9519653"
+    buildToolsVersion "35.0.1"
+    ndkVersion "27.3.13750724"
     defaultConfig {
         applicationId "org.cimbar.camerafilecopy"
         minSdkVersion 21
         targetSdkVersion 35
         versionCode 22
-        versionName "0.6.4"
+        versionName "0.7.0-next"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         ndk {
             abiFilters "arm64-v8a"
