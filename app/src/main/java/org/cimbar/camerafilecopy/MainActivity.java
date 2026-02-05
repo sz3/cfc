@@ -1,15 +1,15 @@
 package org.cimbar.camerafilecopy;
 
-import android.Manifest;
+import org.opencv.android.CameraActivity;
+import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
+import org.opencv.android.OpenCVLoader;
+import org.opencv.core.Mat;
+import org.opencv.android.CameraBridgeViewBase;
+import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
+
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
-
-import androidx.annotation.Nullable;
-import androidx.core.app.ActivityCompat;
-
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
@@ -17,26 +17,18 @@ import android.view.SurfaceView;
 import android.view.WindowManager;
 import android.widget.CompoundButton;
 import android.widget.Toast;
-
-import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.view.GestureDetectorCompat;
-
-import org.opencv.android.BaseLoaderCallback;
-import org.opencv.android.CameraBridgeViewBase;
-import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
-import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
-import org.opencv.android.LoaderCallbackInterface;
-import org.opencv.android.OpenCVLoader;
-import org.opencv.core.Mat;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Collections;
+import java.util.List;
 
-public class MainActivity extends Activity implements CvCameraViewListener2 {
-    private static final String TAG = "MainActivity";
-    private static final int CAMERA_PERMISSION_REQUEST = 1;
+public class MainActivity extends CameraActivity implements CvCameraViewListener2 {
+    private static final String TAG = "cfc::MainActivity";
     private static final int CREATE_FILE = 11;
 
     private GestureDetectorCompat mDetector;
@@ -49,45 +41,42 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     private String dataPath;
     private String activePath;
 
-    private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
-        @Override
-        public void onManagerConnected(int status) {
-            if (status == LoaderCallbackInterface.SUCCESS) {
-                Log.i(TAG, "OpenCV loaded successfully");
+    public MainActivity() {
+        Log.i(TAG, "Instantiated new " + this.getClass());
+    }
 
-                // Load native library after(!) OpenCV initialization
-                System.loadLibrary("cfc-cpp");
-
-                mOpenCvCameraView.enableView();
-            } else {
-                super.onManagerConnected(status);
-            }
-        }
-    };
-
+    /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         Log.i(TAG, "called onCreate");
         super.onCreate(savedInstanceState);
 
+        //! [ocv_loader_init]
+        if (OpenCVLoader.initLocal()) {
+            Log.i(TAG, "OpenCV loaded successfully");
+            System.loadLibrary("cfc-cpp");
+        } else {
+            Log.e(TAG, "OpenCV initialization failed!");
+            (Toast.makeText(this, "OpenCV initialization failed!", Toast.LENGTH_LONG)).show();
+            return;
+        }
+        //! [ocv_loader_init]
+
+        //! [keep_screen]
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-
-        // Permissions for Android 6+
-        ActivityCompat.requestPermissions(
-                this,
-                new String[]{Manifest.permission.CAMERA},
-                CAMERA_PERMISSION_REQUEST
-        );
+        //! [keep_screen]
 
         this.dataPath = this.getFilesDir().getPath();
         //this.dataPath = this.getExternalFilesDir(null).getPath(); // for manual testing
 
         setContentView(R.layout.activity_main);
-        mOpenCvCameraView = findViewById(R.id.main_surface);
+
+        mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.main_surface);
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
         mOpenCvCameraView.setCvCameraViewListener(this);
 
+        // set up mode toggle
         mModeSwitch = (ModeSelToggle) findViewById(R.id.mode_switch);
         mModeSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -107,21 +96,6 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if (requestCode == CAMERA_PERMISSION_REQUEST) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                mOpenCvCameraView.setCameraPermissionGranted();
-            } else {
-                String message = "Camera permission was not granted";
-                Log.e(TAG, message);
-                Toast.makeText(this, message, Toast.LENGTH_LONG).show();
-            }
-        } else {
-            Log.e(TAG, "Unexpected permission request");
-        }
-    }
-
-    @Override
     public void onStart() {
         super.onStart();
         introToast.show();
@@ -131,7 +105,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     }
 
     @Override
-    public void onPause() {
+    public void onPause()
+    {
         shutdownJNI();
         super.onPause();
         if (mOpenCvCameraView != null)
@@ -139,15 +114,16 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     }
 
     @Override
-    public void onResume() {
+    public void onResume()
+    {
         super.onResume();
-        if (!OpenCVLoader.initDebug()) {
-            Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization");
-            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION, this, mLoaderCallback);
-        } else {
-            Log.d(TAG, "OpenCV library found inside package. Using it!");
-            mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
-        }
+        if (mOpenCvCameraView != null)
+            mOpenCvCameraView.enableView();
+    }
+
+    @Override
+    protected List<? extends CameraBridgeViewBase> getCameraViewList() {
+        return Collections.singletonList(mOpenCvCameraView);
     }
 
     @Override
@@ -277,4 +253,3 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     }
 
 }
-
