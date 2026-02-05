@@ -17,9 +17,16 @@ import java.util.Collections;
 import java.util.List;
 
 public class MainActivity extends CameraActivity implements CvCameraViewListener2 {
-    private static final String TAG = "OCVSample::Activity";
+    private static final String TAG = "cfc::MainActivity";
+
+    private Toast introToast;
 
     private CameraBridgeViewBase mOpenCvCameraView;
+    private ModeSelToggle mModeSwitch;
+    private int modeVal = 0;
+    private int detectedMode = 68;
+    private String dataPath;
+    private String activePath;
 
     public MainActivity() {
         Log.i(TAG, "Instantiated new " + this.getClass());
@@ -34,6 +41,7 @@ public class MainActivity extends CameraActivity implements CvCameraViewListener
         //! [ocv_loader_init]
         if (OpenCVLoader.initLocal()) {
             Log.i(TAG, "OpenCV loaded successfully");
+            System.loadLibrary("cfc-cpp");
         } else {
             Log.e(TAG, "OpenCV initialization failed!");
             (Toast.makeText(this, "OpenCV initialization failed!", Toast.LENGTH_LONG)).show();
@@ -43,7 +51,11 @@ public class MainActivity extends CameraActivity implements CvCameraViewListener
 
         //! [keep_screen]
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         //! [keep_screen]
+
+        this.dataPath = this.getFilesDir().getPath();
+        //this.dataPath = this.getExternalFilesDir(null).getPath(); // for manual testing
 
         setContentView(R.layout.activity_main);
 
@@ -52,11 +64,16 @@ public class MainActivity extends CameraActivity implements CvCameraViewListener
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
 
         mOpenCvCameraView.setCvCameraViewListener(this);
+
+        // not yet for the other stuff, but toggle and whatnot goes here
+        // and the hint toast
+        introToast = Toast.makeText(this, "↕ Swipe to encode data! Or use cimbar.org :)",  Toast.LENGTH_LONG);
     }
 
     @Override
     public void onPause()
     {
+        shutdownJNI();
         super.onPause();
         if (mOpenCvCameraView != null)
             mOpenCvCameraView.disableView();
@@ -77,6 +94,7 @@ public class MainActivity extends CameraActivity implements CvCameraViewListener
 
     @Override
     public void onDestroy() {
+        shutdownJNI();
         super.onDestroy();
         if (mOpenCvCameraView != null)
             mOpenCvCameraView.disableView();
@@ -91,7 +109,17 @@ public class MainActivity extends CameraActivity implements CvCameraViewListener
     }
 
     @Override
-    public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
-        return inputFrame.rgba();
+    public Mat onCameraFrame(CvCameraViewFrame frame) {
+        // get current camera frame as OpenCV Mat object
+        Mat mat = frame.rgba();
+
+        // native call to process current camera frame
+        String res = processImageJNI(mat.getNativeObjAddr(), this.dataPath, this.modeVal);
+
+        // return processed frame for live preview
+        return mat;
     }
+
+    private native String processImageJNI(long mat, String path, int modeInt);
+    private native void shutdownJNI();
 }
