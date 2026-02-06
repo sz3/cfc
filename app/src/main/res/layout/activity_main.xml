@@ -9,7 +9,7 @@
     android:fitsSystemWindows="true"
     tools:context=".MainActivity">
 
-    <org.opencv.android.JavaCameraView
+    <org.cimbar.camerafilecopy.OpencvCameraView
         android:id="@+id/main_surface"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
