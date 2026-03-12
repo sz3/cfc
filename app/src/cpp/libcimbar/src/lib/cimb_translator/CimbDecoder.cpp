@@ -18,12 +18,12 @@ const int FIX_THRESH_LOW = 0;
 const float BEST_COLOR_FLOOR = 48.0f;
 
 namespace {
-	unsigned squared_difference(int a, int b)
+    __attribute__((always_inline)) unsigned squared_difference(int a, int b)
 	{
 		return std::pow(a - b, 2);
 	}
 
-	uchar fix_single_color(float c, float adjustUp, float down)
+    __attribute__((always_inline)) uchar fix_single_color(float c, float adjustUp, float down)
 	{
 		c -= down;
 		c *= adjustUp;
@@ -34,7 +34,7 @@ namespace {
 		return (uchar)c;
 	}
 
-	std::tuple<int,int,int> relative_color(std::tuple<uchar,uchar,uchar> c)
+    __attribute__((always_inline)) std::tuple<int,int,int> relative_color(std::tuple<uchar,uchar,uchar> c)
 	{
 		int r = std::get<0>(c);
 		int g = std::get<1>(c);
@@ -42,7 +42,7 @@ namespace {
 		return {r - g, g - b, b - r};
 	}
 
-	unsigned color_diff(std::tuple<uchar,uchar,uchar> a, std::tuple<uchar,uchar,uchar> b)
+    __attribute__((always_inline)) unsigned color_diff(std::tuple<uchar,uchar,uchar> a, std::tuple<uchar,uchar,uchar> b)
 	{
 		std::tuple<int,int,int> rel1 = relative_color(a);
 		std::tuple<int,int,int> rel2 = relative_color(b);
@@ -97,7 +97,7 @@ bool CimbDecoder::load_tiles()
 	return true;
 }
 
-unsigned CimbDecoder::get_best_symbol(image_hash::ahash_result<cimbar::Config::cell_size()>& results, unsigned& drift_offset, unsigned& best_distance, unsigned cooldown) const
+__attribute__((always_inline)) unsigned CimbDecoder::get_best_symbol(image_hash::ahash_result<cimbar::Config::cell_size()>& results, unsigned& drift_offset, unsigned& best_distance, unsigned cooldown) const
 {
 	drift_offset = 0;
 	unsigned best_fit = 0;
@@ -138,14 +138,14 @@ unsigned CimbDecoder::decode_symbol(const cv::Mat& cell, unsigned& drift_offset,
 	return get_best_symbol(results, drift_offset, best_distance, cooldown);
 }
 
-unsigned CimbDecoder::decode_symbol(const bitmatrix& cell, unsigned& drift_offset, unsigned& best_distance, unsigned cooldown) const
+__attribute__((always_inline)) unsigned CimbDecoder::decode_symbol(const bitmatrix& cell, unsigned& drift_offset, unsigned& best_distance, unsigned cooldown) const
 {
 	int checkRule = cooldown == 0xFE? image_hash::ahash_result<cimbar::Config::cell_size()>::ALL : image_hash::ahash_result<cimbar::Config::cell_size()>::FAST;
 	image_hash::ahash_result<cimbar::Config::cell_size()> results = image_hash::fuzzy_ahash<cimbar::Config::cell_size()>(cell, checkRule);
 	return get_best_symbol(results, drift_offset, best_distance, cooldown);
 }
 
-std::tuple<uchar,uchar,uchar> CimbDecoder::fix_color(std::tuple<float,float,float> c, float adjustUp, float down) const
+__attribute__((always_inline)) std::tuple<uchar,uchar,uchar> CimbDecoder::fix_color(std::tuple<float,float,float> c, float adjustUp, float down) const
 {
 	return {
 		fix_single_color(std::get<0>(c), adjustUp, down),
@@ -154,17 +154,17 @@ std::tuple<uchar,uchar,uchar> CimbDecoder::fix_color(std::tuple<float,float,floa
 	};
 }
 
-unsigned CimbDecoder::check_color_distance(std::tuple<uchar,uchar,uchar> a, std::tuple<uchar,uchar,uchar> b) const
+__attribute__((always_inline)) unsigned CimbDecoder::check_color_distance(std::tuple<uchar,uchar,uchar> a, std::tuple<uchar,uchar,uchar> b) const
 {
 	return color_diff(a, b);
 }
 
-std::tuple<uchar,uchar,uchar> CimbDecoder::get_color(int i, unsigned color_mode) const
+__attribute__((always_inline)) std::tuple<uchar,uchar,uchar> CimbDecoder::get_color(int i, unsigned color_mode) const
 {
 	return cimbar::getColor(i, _numColors, color_mode);
 }
 
-unsigned CimbDecoder::get_best_color(float r, float g, float b, unsigned color_mode) const
+__attribute__((always_inline)) unsigned CimbDecoder::get_best_color(float r, float g, float b, unsigned color_mode) const
 {
 	// transform color with ccm
 	if (internal_ccm().active())
@@ -198,7 +198,7 @@ unsigned CimbDecoder::get_best_color(float r, float g, float b, unsigned color_m
 	return best_fit;
 }
 
-std::tuple<uchar,uchar,uchar> CimbDecoder::avg_color(const Cell& color_cell) const
+__attribute__((always_inline)) std::tuple<uchar,uchar,uchar> CimbDecoder::avg_color(const Cell& color_cell) const
 {
 	// TODO: check/enforce dimensions of color_cell?
 	// limit dimensions to ignore outer row/col. We want to look at the middle 6x6, or 3x3...
@@ -207,7 +207,7 @@ std::tuple<uchar,uchar,uchar> CimbDecoder::avg_color(const Cell& color_cell) con
 	return center.mean_rgb();
 }
 
-unsigned CimbDecoder::decode_color(const Cell& color_cell, unsigned color_mode) const
+__attribute__((always_inline)) unsigned CimbDecoder::decode_color(const Cell& color_cell, unsigned color_mode) const
 {
 	if (_numColors <= 1)
 		return 0;

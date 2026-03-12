@@ -18,14 +18,14 @@ public:
 	const color_correction& get_ccm() const;
 	void update_color_correction(cv::Matx<float, 3, 3>&& ccm);
 
-	unsigned get_best_symbol(image_hash::ahash_result<cimbar::Config::cell_size()>& results, unsigned& drift_offset, unsigned& best_distance, unsigned cooldown=0xFF) const;
+    __attribute__((always_inline)) unsigned get_best_symbol(image_hash::ahash_result<cimbar::Config::cell_size()>& results, unsigned& drift_offset, unsigned& best_distance, unsigned cooldown=0xFF) const;
 	unsigned decode_symbol(const cv::Mat& cell, unsigned& drift_offset, unsigned& best_distance, unsigned cooldown=0xFF) const;
-	unsigned decode_symbol(const bitmatrix& cell, unsigned& drift_offset, unsigned& best_distance, unsigned cooldown=0xFF) const;
+    __attribute__((always_inline)) unsigned decode_symbol(const bitmatrix& cell, unsigned& drift_offset, unsigned& best_distance, unsigned cooldown=0xFF) const;
 
-	std::tuple<uchar,uchar,uchar> get_color(int i, unsigned color_mode) const;
-	std::tuple<uchar,uchar,uchar> avg_color(const Cell& color_cell) const;
-	unsigned get_best_color(float r, float g, float b, unsigned color_mode) const;
-	unsigned decode_color(const Cell& cell, unsigned color_mode) const;
+    __attribute__((always_inline)) std::tuple<uchar,uchar,uchar> get_color(int i, unsigned color_mode) const;
+    __attribute__((always_inline)) std::tuple<uchar,uchar,uchar> avg_color(const Cell& color_cell) const;
+    __attribute__((always_inline)) unsigned get_best_color(float r, float g, float b, unsigned color_mode) const;
+    __attribute__((always_inline)) unsigned decode_color(const Cell& cell, unsigned color_mode) const;
 
 	bool expects_binary_threshold() const;
 	unsigned symbol_bits() const;

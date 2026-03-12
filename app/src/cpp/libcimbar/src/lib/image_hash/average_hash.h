@@ -15,7 +15,7 @@
 
 namespace image_hash
 {
-	inline uint64_t average_hash(const cv::Mat& img, uchar threshold=0)
+    __attribute__((always_inline)) inline uint64_t average_hash(const cv::Mat& img, uchar threshold=0)
 	{
 		cv::Mat gray = img;
 		if (img.channels() != 1)
@@ -38,7 +38,7 @@ namespace image_hash
 	}
 
 	template <unsigned CELLSIZE>
-	inline ahash_result<CELLSIZE> fuzzy_ahash(const cv::Mat& img, uchar threshold=0, unsigned mode=ahash_result<CELLSIZE>::ALL)
+    __attribute__((always_inline))  inline ahash_result<CELLSIZE> fuzzy_ahash(const cv::Mat& img, uchar threshold=0, unsigned mode=ahash_result<CELLSIZE>::ALL)
 	{
 		// return 9 uint64_ts, each representing a 5x5 section of the 7x7 img, an 8x8 section of an 10x10 img, etc
 		cv::Mat gray = img;
@@ -60,7 +60,7 @@ namespace image_hash
 	}
 
 	template <unsigned CELLSIZE>
-	inline ahash_result<CELLSIZE> fuzzy_ahash(const bitmatrix& img, unsigned mode=ahash_result<CELLSIZE>::ALL)
+    __attribute__((always_inline)) inline ahash_result<CELLSIZE> fuzzy_ahash(const bitmatrix& img, unsigned mode=ahash_result<CELLSIZE>::ALL)
 	{
 		const unsigned readlen = CELLSIZE+2;
 		intx::uint128 res(0);

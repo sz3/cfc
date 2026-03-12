@@ -175,7 +175,7 @@ inline Scanner::Scanner(const MAT& img, bool fast, bool dark, int skip)
 }
 
 template <typename SCANTYPE>
-inline bool Scanner::scan_horizontal(std::vector<Anchor>& points, int y, int xstart, int xend) const
+__attribute__((always_inline)) inline bool Scanner::scan_horizontal(std::vector<Anchor>& points, int y, int xstart, int xend) const
 {
 	if (xstart < 0)
 		xstart = 0;
@@ -203,7 +203,7 @@ inline bool Scanner::scan_horizontal(std::vector<Anchor>& points, int y, int xst
 }
 
 template <typename SCANTYPE>
-inline bool Scanner::scan_vertical(std::vector<Anchor>& points, int x, int xmax, int ystart, int yend) const
+__attribute__((always_inline)) inline bool Scanner::scan_vertical(std::vector<Anchor>& points, int x, int xmax, int ystart, int yend) const
 {
 	if (xmax < 0)
 		xmax = x;
@@ -235,7 +235,7 @@ inline bool Scanner::scan_vertical(std::vector<Anchor>& points, int x, int xmax,
 }
 
 template <typename SCANTYPE>
-inline bool Scanner::scan_diagonal(std::vector<Anchor>& points, int xstart, int xend, int ystart, int yend) const
+__attribute__((always_inline)) inline bool Scanner::scan_diagonal(std::vector<Anchor>& points, int xstart, int xend, int ystart, int yend) const
 {
 	xend = std::min(xend, _img.cols);
 	yend = std::min(yend, _img.rows);

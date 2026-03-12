@@ -6,7 +6,7 @@
 namespace image_hash
 {
 	template <typename Integer>
-	inline unsigned hamming_distance(Integer a, Integer b)
+    __attribute__((always_inline)) inline unsigned hamming_distance(Integer a, Integer b)
 	{
 		return popcnt64(a xor b);
 	}
