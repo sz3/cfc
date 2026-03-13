@@ -15,8 +15,8 @@ public:
 	CimbReader(const cv::Mat& img, CimbDecoder& decoder, unsigned color_mode, bool needs_sharpen=false, int color_correction=2);
 	CimbReader(const cv::UMat& img, CimbDecoder& decoder, unsigned color_mode, bool needs_sharpen=false, int color_correction=2);
 
-    __attribute__((always_inline)) unsigned read(PositionData& pos);
-    __attribute__((always_inline)) unsigned read_color(const PositionData& pos) const;
+	__attribute__((always_inline)) unsigned read(PositionData& pos);
+	__attribute__((always_inline)) unsigned read_color(const PositionData& pos) const;
 	bool done() const;
 
 	void init_ccm(unsigned color_bits, unsigned interleave_blocks, unsigned interleave_partitions, unsigned fountain_blocks);
