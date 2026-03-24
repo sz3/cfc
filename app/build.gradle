@@ -44,3 +44,10 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
     implementation project(path: ':opencv')
 }
+
+preBuild.doFirst {
+    if (!file("src/main/assets/cimbar_js.html").exists()) {
+        throw new GradleException("Missing cimbar-js-bits submodule?")
+    }
+}
+
