@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
 
+#set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -mllvm -aarch64-enable-early-ifcvt=true -mllvm -two-entry-phi-node-folding-threshold=5 -mllvm -phi-node-folding-threshold=5 -mllvm -inline-threshold=5000")
+
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -mllvm -inline-threshold=5000")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -mllvm -inline-threshold=5000")
+
 set(SOURCES
 	bitmaps.h
 	AdjacentCellFinder.cpp
