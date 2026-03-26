@@ -7,14 +7,18 @@ import org.opencv.core.Mat;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.view.SurfaceView;
 import android.view.WindowManager;
 import android.widget.CompoundButton;
 import android.widget.Toast;
 import androidx.annotation.Nullable;
+import androidx.core.view.GestureDetectorCompat;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -27,6 +31,7 @@ public class MainActivity extends CameraActivity implements CvCameraViewListener
     private static final String TAG = "cfc::MainActivity";
     private static final int CREATE_FILE = 11;
 
+    private GestureDetectorCompat mDetector;
     private Toast introToast;
 
     private CameraBridgeViewBase mOpenCvCameraView;
@@ -82,6 +87,10 @@ public class MainActivity extends CameraActivity implements CvCameraViewListener
                 }
             }
         });
+
+        // Set up the swipe gestures
+        mDetector = new GestureDetectorCompat(this, new FlingGestureListener());
+
         // and the hint toast
         introToast = Toast.makeText(this, "↕ Swipe to encode data! Or use cimbar.org :)",  Toast.LENGTH_LONG);
     }
@@ -208,4 +217,39 @@ public class MainActivity extends CameraActivity implements CvCameraViewListener
 
     private native String processImageJNI(long mat, String path, int modeInt);
     private native void shutdownJNI();
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event){
+        if (this.mDetector.onTouchEvent(event)) {
+            return true;
+        }
+        return super.onTouchEvent(event);
+    }
+    @SuppressLint("ClickableViewAccessibility")
+    class FlingGestureListener extends GestureDetector.SimpleOnGestureListener {
+        private static final String TAG = "Gestures";
+
+        // We only want fling gestures to trigger the view transitions, not scrolling.
+        @Override
+        public boolean onFling(MotionEvent event1, MotionEvent event2,
+                               float velocityX, float velocityY) {
+            final int THRESHOLD = 100;
+            final int VEL_THRESHOLD = 100;
+
+            if (Math.abs(velocityY) < VEL_THRESHOLD)
+                return false;
+            if (Math.abs(event1.getY() - event2.getY()) < THRESHOLD)
+                return false;
+            if (mOpenCvCameraView != null)
+                mOpenCvCameraView.disableView();
+            if (introToast != null)
+                introToast.cancel();
+
+            Intent intent = new Intent(MainActivity.this, WebViewActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            return true;
+        }
+    }
+
 }
