@@ -6,6 +6,7 @@
 #include "Config.h"
 #include "image_hash/hamming_distance.h"
 #include "serialize/format.h"
+#include "util/compiler_constants.h"
 
 #include <algorithm>
 #include <iostream>
@@ -18,12 +19,12 @@ const int FIX_THRESH_LOW = 0;
 const float BEST_COLOR_FLOOR = 48.0f;
 
 namespace {
-	__attribute__((always_inline)) unsigned squared_difference(int a, int b)
+	unsigned squared_difference(int a, int b)
 	{
 		return std::pow(a - b, 2);
 	}
 
-	__attribute__((always_inline)) uchar fix_single_color(float c, float adjustUp, float down)
+	uchar fix_single_color(float c, float adjustUp, float down)
 	{
 		c -= down;
 		c *= adjustUp;
@@ -34,7 +35,7 @@ namespace {
 		return (uchar)c;
 	}
 
-	__attribute__((always_inline)) std::tuple<int,int,int> relative_color(std::tuple<uchar,uchar,uchar> c)
+	std::tuple<int,int,int> relative_color(std::tuple<uchar,uchar,uchar> c)
 	{
 		int r = std::get<0>(c);
 		int g = std::get<1>(c);
@@ -42,7 +43,7 @@ namespace {
 		return {r - g, g - b, b - r};
 	}
 
-	__attribute__((always_inline)) unsigned color_diff(std::tuple<uchar,uchar,uchar> a, std::tuple<uchar,uchar,uchar> b)
+	unsigned color_diff(std::tuple<uchar,uchar,uchar> a, std::tuple<uchar,uchar,uchar> b)
 	{
 		std::tuple<int,int,int> rel1 = relative_color(a);
 		std::tuple<int,int,int> rel2 = relative_color(b);
@@ -130,7 +131,7 @@ unsigned CimbDecoder::get_best_symbol(image_hash::ahash_result<cimbar::Config::c
 	return best_fit;
 }
 
-__attribute__((flatten)) unsigned CimbDecoder::decode_symbol(const bitmatrix& cell, unsigned& drift_offset, unsigned& best_distance, unsigned cooldown) const
+CIMBAR_FLATTEN unsigned CimbDecoder::decode_symbol(const bitmatrix& cell, unsigned& drift_offset, unsigned& best_distance, unsigned cooldown) const
 {
 	int checkRule = cooldown == 0xFE? image_hash::ahash_result<cimbar::Config::cell_size()>::ALL : image_hash::ahash_result<cimbar::Config::cell_size()>::FAST;
 	image_hash::ahash_result<cimbar::Config::cell_size()> results = image_hash::fuzzy_ahash<cimbar::Config::cell_size()>(cell, checkRule);
@@ -199,7 +200,7 @@ std::tuple<uchar,uchar,uchar> CimbDecoder::avg_color(const Cell& color_cell) con
 	return center.mean_rgb();
 }
 
-__attribute__((flatten)) unsigned CimbDecoder::decode_color(const Cell& color_cell, unsigned color_mode) const
+CIMBAR_FLATTEN unsigned CimbDecoder::decode_color(const Cell& color_cell, unsigned color_mode) const
 {
 	if (_numColors <= 1)
 		return 0;

@@ -5,6 +5,7 @@
 #include "bit_extractor.h"
 #include "bit_file/bitmatrix.h"
 #include "cimb_translator/Cell.h"
+#include "util/compiler_constants.h"
 
 #include "intx/intx.hpp"
 #include <opencv2/opencv.hpp>
@@ -15,7 +16,7 @@
 
 namespace image_hash
 {
-	__attribute__((always_inline)) inline uint64_t average_hash(const cv::Mat& img, uchar threshold=0)
+	inline uint64_t average_hash(const cv::Mat& img, uchar threshold=0)
 	{
 		cv::Mat gray = img;
 		if (img.channels() != 1)
@@ -38,7 +39,7 @@ namespace image_hash
 	}
 
 	template <unsigned CELLSIZE>
-	__attribute__((always_inline))  inline ahash_result<CELLSIZE> fuzzy_ahash(const cv::Mat& img, uchar threshold=0, unsigned mode=ahash_result<CELLSIZE>::ALL)
+	inline ahash_result<CELLSIZE> fuzzy_ahash(const cv::Mat& img, uchar threshold=0, unsigned mode=ahash_result<CELLSIZE>::ALL)
 	{
 		// return 9 uint64_ts, each representing a 5x5 section of the 7x7 img, an 8x8 section of an 10x10 img, etc
 		cv::Mat gray = img;
@@ -60,7 +61,7 @@ namespace image_hash
 	}
 
 	template <unsigned CELLSIZE>
-	__attribute__((always_inline)) inline ahash_result<CELLSIZE> fuzzy_ahash(const bitmatrix& img, unsigned mode=ahash_result<CELLSIZE>::ALL)
+	CIMBAR_ALWAYS_INLINE inline ahash_result<CELLSIZE> fuzzy_ahash(const bitmatrix& img, unsigned mode=ahash_result<CELLSIZE>::ALL)
 	{
 		const unsigned readlen = CELLSIZE+2;
 		intx::uint128 res(0);
