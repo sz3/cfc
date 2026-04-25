@@ -1,4 +1,0 @@
-[submodule "samples"]
-	path = samples
-	url = https://github.com/sz3/cimbar-samples
-	ignore = dirty

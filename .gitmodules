@@ -1,3 +1,4 @@
-[submodule "cimbar-js-bits"]
-	path = app/src/main/assets
-	url = https://github.com/sz3/cimbar-js-bits.git
+[submodule "samples"]
+	path = samples
+	url = https://github.com/sz3/cimbar-samples
+	ignore = dirty
