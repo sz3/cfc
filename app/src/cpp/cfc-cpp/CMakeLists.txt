@@ -15,7 +15,7 @@ find_library(log-lib
 target_link_libraries(cfc-cpp
 
         cimb_translator
-	extractor
+        extractor
 
         correct_static
         wirehair
