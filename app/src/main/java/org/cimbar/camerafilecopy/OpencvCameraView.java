@@ -174,7 +174,7 @@ public class OpencvCameraView extends CameraBridgeViewBase implements PreviewCal
 
                 if (sizes != null) {
                     /* Select the size that fits surface considering maximum size allowed */
-                    Size frameSize = bestCameraFrameSize(sizes, new JavaCameraSizeAccessor(), width, height);
+                    Size frameSize = bestCameraFrameSize(sizes, new JavaCameraSizeAccessor(), width>height? width : height, width>height? height : width);
 
                     /* Image format NV21 causes issues in the Android emulators */
                     if (Build.FINGERPRINT.startsWith("generic")

@@ -71,17 +71,17 @@ namespace {
 		int outlinex = lx - outlineOffset;
 		int outliney = ty - outlineOffset;
 		cv::line(mat, cv::Point(lx, outliney), cv::Point(lx + guideLength, outliney), outline, outlineWidth);
-		cv::line(mat, cv::Point(outlinex, guideOffset), cv::Point(outlinex, ty + guideLength), outline, outlineWidth);
-		cv::line(mat, cv::Point(lx, guideOffset), cv::Point(lx + guideLength, ty), color, guideWidth);
-		cv::line(mat, cv::Point(lx, guideOffset), cv::Point(lx, ty + guideLength), color, guideWidth);
+		cv::line(mat, cv::Point(outlinex, ty), cv::Point(outlinex, ty + guideLength), outline, outlineWidth);
+		cv::line(mat, cv::Point(lx, ty), cv::Point(lx + guideLength, ty), color, guideWidth);
+		cv::line(mat, cv::Point(lx, ty), cv::Point(lx, ty + guideLength), color, guideWidth);
 
 		int rx = mat.cols - guideOffset - guideWidth - xextra;
 		outlinex = rx + outlineOffset;
 		outliney = ty - outlineOffset;
 		cv::line(mat, cv::Point(rx, outliney), cv::Point(rx - guideLength, outliney), outline, outlineWidth);
-		cv::line(mat, cv::Point(outlinex, guideOffset), cv::Point(outlinex, ty + guideLength), outline, outlineWidth);
-		cv::line(mat, cv::Point(rx, guideOffset), cv::Point(rx - guideLength, ty), color, guideWidth);
-		cv::line(mat, cv::Point(rx, guideOffset), cv::Point(rx, ty + guideLength), color, guideWidth);
+		cv::line(mat, cv::Point(outlinex, ty), cv::Point(outlinex, ty + guideLength), outline, outlineWidth);
+		cv::line(mat, cv::Point(rx, ty), cv::Point(rx - guideLength, ty), color, guideWidth);
+		cv::line(mat, cv::Point(rx, ty), cv::Point(rx, ty + guideLength), color, guideWidth);
 
 		int by = mat.rows - guideOffset - guideWidth - yextra;
 		outlinex = lx - outlineOffset;
@@ -125,7 +125,7 @@ namespace {
 	{
 		std::stringstream sstop;
 		sstop << "cfc using " << proc.num_threads() << " thread(s). " << proc.mode() << ":" << proc.detected_mode() << "..." << proc.backlog() << "? ";
-		sstop << (MultiThreadedDecoder::bytes / std::max<double>(1, MultiThreadedDecoder::decoded)) << "b v0.7.0";
+		sstop << (MultiThreadedDecoder::bytes / std::max<double>(1, MultiThreadedDecoder::decoded)) << "b v0.6.6";
 		std::stringstream ssmid;
 		ssmid << "#: " << MultiThreadedDecoder::perfect << " / " << MultiThreadedDecoder::decoded << " / " << MultiThreadedDecoder::scanned << " / " << _calls;
 		std::stringstream ssperf;
@@ -144,11 +144,11 @@ namespace {
 
 		/*std::stringstream ssperf2;
 		ssperf2 << "reader ctor: " << millis(Decoder::readerInitTicks, MultiThreadedDecoder::decoded);
-		ssperf2 << ", fount: " << millis(Decoder::fountTicks, MultiThreadedDecoder::decoded);
-		ssperf2 << ", dodecode: " << millis(Decoder::decodeTicks, MultiThreadedDecoder::decoded);
-		ssperf2 << ", readloop: " << millis(Decoder::bbTicks, MultiThreadedDecoder::decoded);
 		ssperf2 << ", rss: " << millis(Decoder::rssTicks, MultiThreadedDecoder::decoded);
-		cv::putText(mat, ssperf2.str(), cv::Point(5,300), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
+		ssperf2 << ", symbol: " << millis(Decoder::symbolTicks, MultiThreadedDecoder::decoded);
+		ssperf2 << ", color: " << millis(Decoder::colorTicks, MultiThreadedDecoder::decoded);
+		ssperf2 << ", ccm: " << millis(Decoder::ccmTicks, MultiThreadedDecoder::decoded);
+		cv::putText(mat, ssperf2.str(), cv::Point(5,250), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255,255,80), 2);
 		//*/
 	}
 

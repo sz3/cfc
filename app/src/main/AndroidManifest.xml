@@ -15,7 +15,7 @@
             android:supportsRtl="true"
             android:theme="@android:style/Theme.NoTitleBar">
         <activity android:name=".MainActivity"
-		  android:screenOrientation="landscape"
+		  android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
 		  android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
