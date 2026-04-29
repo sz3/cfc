@@ -9,6 +9,7 @@ import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.GestureDetector;
@@ -119,6 +120,13 @@ public class MainActivity extends CameraActivity implements CvCameraViewListener
         super.onResume();
         if (mOpenCvCameraView != null)
             mOpenCvCameraView.enableView();
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        getWindow().getDecorView().requestLayout();
+        overridePendingTransition(0, 0);
     }
 
     @Override

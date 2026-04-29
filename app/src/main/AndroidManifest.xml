@@ -15,7 +15,7 @@
             android:supportsRtl="true"
             android:theme="@android:style/Theme.NoTitleBar">
         <activity android:name=".MainActivity"
-		  android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+		  android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
 		  android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -24,7 +24,7 @@
             </intent-filter>
         </activity>
         <activity android:name=".WebViewActivity"
-            android:screenOrientation="landscape"
+		  android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
             android:exported="true">
         </activity>
     </application>
