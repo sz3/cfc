@@ -51,7 +51,6 @@ public class MainActivity extends CameraActivity implements CvCameraViewListener
     public void onCreate(Bundle savedInstanceState) {
         Log.i(TAG, "called onCreate");
         super.onCreate(savedInstanceState);
-
         //! [ocv_loader_init]
         if (OpenCVLoader.initLocal()) {
             Log.i(TAG, "OpenCV loaded successfully");
@@ -67,6 +66,11 @@ public class MainActivity extends CameraActivity implements CvCameraViewListener
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         //! [keep_screen]
+
+        // quicker orientation transition (not very pretty though)
+        WindowManager.LayoutParams lp = getWindow().getAttributes();
+        lp.rotationAnimation = WindowManager.LayoutParams.ROTATION_ANIMATION_JUMPCUT;
+        getWindow().setAttributes(lp);
 
         this.dataPath = this.getFilesDir().getPath();
         //this.dataPath = this.getExternalFilesDir(null).getPath(); // for manual testing
