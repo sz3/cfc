@@ -26,6 +26,10 @@
     native <methods>;
 }
 
+# keep cfc classes
+-keep class org.cimbar.** { *; }
+-keepclassmembers class org.cimbar.** { *; }
+
 # Keep OpenCV Android SDK Java wrappers from being stripped
 -keep class org.opencv.** { *; }
 -keepclassmembers class org.opencv.** { *; }
