@@ -7,16 +7,11 @@
 
 class FountainEncoder
 {
-protected:
-	void swap(FountainEncoder& other) throw()
-	{
-		std::swap(_codec, other._codec);
-		std::swap(_packetSize, other._packetSize);
-	}
-
 public:
+	FountainEncoder() = default;
+
 	FountainEncoder(const uint8_t* data, size_t length, size_t packet_size)
-	    : _packetSize(packet_size)
+		: _packetSize(packet_size)
 	{
 		FountainInit::init();
 		_codec = wirehair_encoder_create(nullptr, data, length, packet_size);
@@ -24,12 +19,28 @@ public:
 
 	~FountainEncoder()
 	{
-		wirehair_free(_codec);
+		if (_codec)
+			wirehair_free(_codec);
 	}
 
-	FountainEncoder& operator=(FountainEncoder temp)
+	// no copy
+	FountainEncoder(const FountainEncoder&) = delete;
+	FountainEncoder& operator=(const FountainEncoder&) = delete;
+
+	FountainEncoder(FountainEncoder&& other) noexcept
+		: _codec(std::exchange(other._codec, nullptr))
+		, _packetSize(other._packetSize)
+	{}
+
+	FountainEncoder& operator=(FountainEncoder&& other) noexcept
 	{
-		temp.swap(*this);
+		if (this != &other)
+		{
+			if (_codec)
+				wirehair_free(_codec);
+			_codec = std::exchange(other._codec, nullptr);
+			_packetSize = other._packetSize;
+		}
 		return *this;
 	}
 
@@ -54,6 +65,6 @@ public:
 	}
 
 protected:
-	WirehairCodec _codec;
+	WirehairCodec _codec = nullptr;
 	size_t _packetSize;
 };

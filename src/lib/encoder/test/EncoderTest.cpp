@@ -16,6 +16,18 @@
 #include <string>
 #include <vector>
 
+namespace {
+	// evil hacks for MSVC
+	std::string operator/(const std::filesystem::path& lhs, const char* rhs)
+	{
+		return (lhs / std::filesystem::path(rhs)).string();
+	}
+
+	std::string operator/(const std::filesystem::path& lhs, const std::string& rhs)
+	{
+		return (lhs / std::filesystem::path(rhs)).string();
+	}
+}
 
 TEST_CASE( "EncoderTest/testVanilla", "[unit]" )
 {

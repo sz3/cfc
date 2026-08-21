@@ -23,11 +23,13 @@ target_link_libraries(cimbar
 	${CPPFILESYSTEM}
 )
 
-add_custom_command(
-	TARGET cimbar POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:cimbar> cimbar.dbg
-	COMMAND ${CMAKE_STRIP} -g $<TARGET_FILE:cimbar>
-)
+if(NOT MSVC)
+	add_custom_command(
+		TARGET cimbar POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:cimbar> cimbar.dbg
+		COMMAND ${CMAKE_STRIP} -g $<TARGET_FILE:cimbar>
+	)
+endif()
 
 install(
 	TARGETS cimbar

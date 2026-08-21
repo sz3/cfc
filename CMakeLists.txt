@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.10)
 
+if(DEFINED CMAKE_TOOLCHAIN_FILE AND CMAKE_VERSION VERSION_GREATER_EQUAL "3.14")
+	set(X_VCPKG_APPLOCAL_DEPS_INSTALL ON CACHE BOOL "Install vcpkg runtime dependencies with executables")
+endif()
+
 project ( libcimbar )
 enable_testing()
-
-if (MSVC)
-    add_compile_options(/FI "iso646.h")
-endif()
 
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 
@@ -15,6 +15,14 @@ endif()
 
 set(CMAKE_CXX_STANDARD 17)
 add_definitions("-DLIBCIMBAR_PROJECT_ROOT=\"${libcimbar_SOURCE_DIR}\"")
+
+# reproducible build, hopefully
+if(NOT MSVC)
+	add_compile_options(
+		-ffile-prefix-map=${CMAKE_SOURCE_DIR}=.
+		-ffile-prefix-map=${CMAKE_BINARY_DIR}=.
+	)
+endif()
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "")
 	set(CMAKE_BUILD_TYPE "RelWithDebInfo")
@@ -39,6 +47,16 @@ else()  # if not wasm, go find opencv. 3 or 4 should both work
 	include_directories(${OpenCV_INCLUDE_DIRS})
 endif()
 
+if(MSVC)
+	find_package(glfw3 CONFIG REQUIRED)
+	find_package(unofficial-angle CONFIG REQUIRED)
+	set(PLATFORM_GL unofficial::angle::libGLESv2 unofficial::angle::libEGL)
+	get_target_property(ANGLE_EGL_RELEASE_DLL unofficial::angle::libEGL IMPORTED_LOCATION_RELEASE)
+	get_target_property(ANGLE_EGL_DEBUG_DLL unofficial::angle::libEGL IMPORTED_LOCATION_DEBUG)
+else()
+	set(PLATFORM_GL GL)
+endif()
+
 if(DEFINED BUILD_PORTABLE_LINUX)
 	find_package(PkgConfig REQUIRED)
 	pkg_check_modules(OPENCV4 REQUIRED opencv4)
@@ -56,7 +74,10 @@ if(NOT DEFINED CPPFILESYSTEM)
 	set(CPPFILESYSTEM "stdc++fs")
 endif()
 
+# special snowflake MSVC section
 if(MSVC)
+	add_compile_options(/FI "iso646.h" /utf-8)
+
 	set(CPPFILESYSTEM "")
 endif()
 
@@ -104,5 +125,10 @@ include_directories(
 foreach(proj ${PROJECTS})
 	add_subdirectory(${proj} build/${proj})
 endforeach()
+
+if(MSVC)
+	install(FILES "${ANGLE_EGL_RELEASE_DLL}" DESTINATION bin CONFIGURATIONS Release RelWithDebInfo MinSizeRel)
+	install(FILES "${ANGLE_EGL_DEBUG_DLL}" DESTINATION bin CONFIGURATIONS Debug)
+endif()
 
 

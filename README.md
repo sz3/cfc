@@ -53,7 +53,7 @@ Crucially, because the encoder compiles to asmjs and wasm, it can run on anythin
 * wirehair - https://github.com/catid/wirehair
 * zstd - https://github.com/facebook/zstd
 
-## Build
+## Build (linux dev)
 
 1. install opencv and GLFW. On ubuntu/debian, this looks like:
 ```
@@ -69,7 +69,23 @@ make install
 
 By default, libcimbar will try to install build products under `./dist/bin/`.
 
-To build cimbar.js (what cimbar.org uses), see [WASM](WASM.md).
+### Build (windows MSVC + vcpkg)
+
+Install Visual Studio with the Desktop development with C++ workload, CMake 3.14 or newer, and [vcpkg](https://github.com/microsoft/vcpkg). Set `VCPKG_ROOT` to the vcpkg checkout, then configure and build from PowerShell:
+
+```
+cmake -S . -B build-windows -A x64 "-DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
+cmake --build build-windows --config Release --target cimbar_send cimbar_recv cimbar_recv2 --parallel
+cmake --install build-windows --config Release
+```
+
+The included `vcpkg.json` installs OpenCV, GLFW, and ANGLE during configuration. The executables and their runtime DLLs are installed under `./dist/bin/`.
+
+Note: native Windows is supported on a "best efforts" basis, so things may be a bit more buggy. (primary dev is for linux/android)
+
+### Build wasm (cimbar.js)
+
+To build cimbar.js (what cimbar.org uses), see [WASM](WASM.md). Or use the [latest release](https://github.com/sz3/libcimbar/releases/latest).
 
 ## Usage
 

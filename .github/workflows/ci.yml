@@ -27,30 +27,56 @@ jobs:
           env: CXX="clang++" CC="clang"
           extra-packages: "clang"
 
+        - name: "windows msvc"
+          os: windows-latest
+
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: 'recursive'
 
-    - name: Install dependencies
+    - name: Install dependencies (linux)
+      if: runner.os == 'Linux'
       run: sudo apt-get update && sudo apt-get install libopencv-dev libglfw3-dev libgles2-mesa-dev ${{ matrix.config.extra-packages }}
 
     - name: Create Build Environment
-      run: cmake -E make_directory ${{runner.workspace}}/build
+      run: |
+        cmake -E make_directory ${{runner.workspace}}/build
+        cmake -E make_directory ${{github.workspace}}/vcpkg-cache
 
-    - name: Configure CMake
+    - name: setup vcpkg cache (windows)
+      if: runner.os == 'Windows'
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.workspace }}/vcpkg-cache
+        key: vcpkg-cache-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+        restore-keys: |
+          vcpkg-cache-${{ runner.os }}-
+
+    - name: Configure CMake (linux)
+      if: runner.os == 'Linux'
       working-directory: ${{runner.workspace}}/build
       run: ${{ matrix.config.env }} cmake $GITHUB_WORKSPACE
 
+    - name: Configure CMake (windows)
+      if: runner.os == 'Windows'
+      env:
+        VCPKG_BINARY_SOURCES: "clear;files,${{ github.workspace }}/vcpkg-cache,readwrite"
+      working-directory: ${{runner.workspace}}/build
+      run: cmake $env:GITHUB_WORKSPACE -A x64 "-DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+
     - name: Build
       working-directory: ${{runner.workspace}}/build
-      run: cmake --build . && cmake --install .
+      run: |
+        cmake --build . --config Release
+        cmake --install . --config Release
 
     - name: Test
       working-directory: ${{runner.workspace}}/build
       run: ctest --output-on-failure
 
     - name: Usage test
+      if: runner.os == 'Linux'
       working-directory: ${{runner.workspace}}/libcimbar/test/py
       run: python3 -m unittest
 

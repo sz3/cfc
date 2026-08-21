@@ -29,6 +29,10 @@ else()
 	)
 endif()
 
+if(MSVC)
+	target_compile_definitions(cimbar_js PUBLIC CIMBAR_USE_ANGLE)
+endif()
+
 target_link_libraries(cimbar_js
 
 	cimb_translator
@@ -83,8 +87,6 @@ endif()
 set (LINK_WASM_LIST
 	--bind -Os
 	${LINK_WASM_OPT}
-	-s USE_WEBGL2=1
-	-s MIN_WEBGL_VERSION=2
 	-s MAX_WEBGL_VERSION=2
 	-s USE_GLFW=3
 	-s WASM_BIGINT=1
@@ -111,7 +113,7 @@ if(DEFINED USE_WASM)
 
 else()  # if no wasm, ignore all that and add in GLFW libraries
 	target_link_libraries(cimbar_js
-		GL
+		${PLATFORM_GL}
 		glfw
 	)
 endif()
