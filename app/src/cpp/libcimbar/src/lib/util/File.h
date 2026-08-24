@@ -16,9 +16,14 @@ public:
 	}
 
 public:
-	File(std::string filename, bool write=false)
+	File(const std::string& filename, bool write=false)
 	{
 		_fp = fopen(filename.c_str(), write? "wb" : "rb");
+	}
+
+	File(const std::filesystem::path& filename, bool write=false)
+		: File(filename.string(), write)
+	{
 	}
 
 	std::string read_all()

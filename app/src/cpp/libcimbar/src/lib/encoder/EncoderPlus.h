@@ -24,7 +24,7 @@ public:
 
 inline unsigned EncoderPlus::encode(const std::string& filename, std::string output_prefix)
 {
-	std::ifstream f(filename);
+	std::ifstream f(filename, std::ios::binary);
 
 	unsigned i = 0;
 	while (true)

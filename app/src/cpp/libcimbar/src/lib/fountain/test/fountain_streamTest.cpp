@@ -268,6 +268,49 @@ TEST_CASE( "FountainStreamTest/testDecode_BigPackets", "[unit]" )
 	assertEquals( 14, fes->block_count() );
 	assertEquals( 13, fes->blocks_required() );
 	assertTrue( fes->good() );
-
 }
+
+TEST_CASE( "FountainStreamTest/testDecode_RejectSizeMismatch", "[unit]" )
+{
+	stringstream input;
+	for (int i = 0; i < 100; ++i)
+		input << "0123456789";
+
+	fountain_encoder_stream::ptr fes = fountain_encoder_stream::create(input, 625);
+
+	assertEquals( 0, fes->block_count() );
+	assertEquals( 2, fes->blocks_required() );
+	assertTrue( fes->good() );
+
+	fountain_decoder_stream fdsgood(input.str().size(), 625);
+	fountain_decoder_stream fdsbad(input.str().size() + 7, 625); // size mismatch
+
+	std::array<char, 625> buff; // one block per read/write
+	for (int i = 0; i < 100; ++i)
+	{
+		unsigned res = fes->readsome(buff.data(), buff.size());
+		assertEquals( res, buff.size() );
+
+		assertFalse( fdsbad.write(buff.data(), buff.size()) ); // always reject on decode()
+
+		if (i < 2)
+		{
+			bool isdone = fdsgood.write(buff.data(), buff.size());
+			assertEquals( (i == 1), isdone );
+		}
+	}
+
+	assertEquals( 619, fdsgood.block_size() );
+	assertEquals( 1000, fdsgood.data_size() );
+	assertTrue( fdsgood.good() );
+
+	assertEquals( 619, fdsbad.block_size() );
+	assertEquals( 1007, fdsbad.data_size() );
+	assertTrue( fdsbad.good() );
+
+	assertEquals( 101, fes->block_count() );
+	assertEquals( 2, fes->blocks_required() );
+	assertTrue( fes->good() );
+}
+
 

@@ -16,17 +16,26 @@ target_link_libraries(cimbar_recv
 	cimbar_js
 	extractor
 
-	GL
+	${PLATFORM_GL}
 	glfw
 	${OPENCV_LIBS}
 	opencv_videoio
 )
 
-add_custom_command(
-	TARGET cimbar_recv POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:cimbar_recv> cimbar_recv.dbg
-	COMMAND ${CMAKE_STRIP} -g $<TARGET_FILE:cimbar_recv>
-)
+if(MSVC)
+	add_custom_command(
+		TARGET cimbar_recv POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different
+			$<TARGET_FILE:unofficial::angle::libEGL>
+			$<TARGET_FILE_DIR:cimbar_recv>
+	)
+else()
+	add_custom_command(
+		TARGET cimbar_recv POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:cimbar_recv> cimbar_recv.dbg
+		COMMAND ${CMAKE_STRIP} -g $<TARGET_FILE:cimbar_recv>
+	)
+endif()
 
 install(
 	TARGETS cimbar_recv

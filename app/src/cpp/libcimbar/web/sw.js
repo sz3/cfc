@@ -3,6 +3,7 @@ var _cacheName = 'cimbar-js-v%VERSION%';
 var _cacheFiles = [
   '/',
   '/index.html',
+  '/index.html?ww=1',
   '/cimbar_js.js',
   '/cimbar_js.wasm',
   '/favicon.ico',

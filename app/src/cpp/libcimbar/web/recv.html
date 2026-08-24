@@ -426,7 +426,7 @@
   <script type="text/javascript">
     Recv.init_ww(4);
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./recv-sw.js');
+      navigator.serviceWorker.register('./recv-sw.js', { scope: '/recv.html' });
     }
     var video = document.querySelector('#video');
 

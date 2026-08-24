@@ -54,7 +54,7 @@ class fountain_decoder_sink
 {
 public:
 	fountain_decoder_sink(unsigned chunk_size, const std::function<std::string(const std::string&, const std::vector<uint8_t>&)>& on_store=nullptr)
-		: _chunkSize(chunk_size)
+		: _chunkSize(chunk_size < 50? 50 : chunk_size)
 		, _onStore(on_store)
 	{
 	}
@@ -132,7 +132,8 @@ public:
 
 	int64_t decode_frame(const char* data, unsigned size)
 	{
-		if (size < FountainMetadata::md_size)
+		// 2nd clause is implicitly true iff 1st is... but leave it for clarity
+		if ((size%_chunkSize) > 0 or size < FountainMetadata::md_size)
 			return -10;
 
 		FountainMetadata md(data, size);

@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
 project ( libcimbar )
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 	set(CMAKE_INSTALL_PREFIX "${libcimbar_SOURCE_DIR}/dist" CACHE PATH "..." FORCE)
 endif()

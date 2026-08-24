@@ -15,7 +15,7 @@ using namespace cimbar;
 using namespace std;
 
 namespace {
-	using random_bytes_engine = std::independent_bits_engine<std::default_random_engine, CHAR_BIT, unsigned char>;
+	using random_bytes_engine = std::independent_bits_engine<std::default_random_engine, CHAR_BIT, unsigned>;
 
 	string big_random(size_t size)
 	{
