@@ -14,7 +14,7 @@ class FountainDecoder
 {
 public:
 	FountainDecoder(size_t length, size_t packet_size)
-	    : _length(length)
+		: _length(length)
 	{
 		FountainInit::init();
 		_codec = wirehair_decoder_create(nullptr, length, packet_size);
@@ -22,7 +22,33 @@ public:
 
 	~FountainDecoder()
 	{
-		wirehair_free(_codec);
+		if (_codec)
+			wirehair_free(_codec);
+	}
+
+	// no copy
+	FountainDecoder(const FountainDecoder&) = delete;
+	FountainDecoder& operator=(const FountainDecoder&) = delete;
+
+	FountainDecoder(FountainDecoder&& other) noexcept
+		: _codec(std::exchange(other._codec, nullptr))
+		, _res(other._res)
+		, _length(other._length)
+		, _seenBlocks(std::move(other._seenBlocks))
+	{}
+
+	FountainDecoder& operator=(FountainDecoder&& other) noexcept
+	{
+		if (this != &other)
+		{
+			if (_codec)
+				wirehair_free(_codec);
+			_codec = std::exchange(other._codec, nullptr);
+			_res = other._res;
+			_length = other._length;
+			_seenBlocks = std::move(other._seenBlocks);
+		}
+		return *this;
 	}
 
 	unsigned progress() const
@@ -76,7 +102,7 @@ public:
 	}
 
 protected:
-	WirehairCodec _codec;
+	WirehairCodec _codec = nullptr;
 	WirehairResult _res;
 	size_t _length;
 	std::set<unsigned> _seenBlocks; // giving wirehair_decode the same block too many times can make it very, very upset

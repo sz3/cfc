@@ -8,14 +8,29 @@
 # If your project uses WebView with JS, uncomment the following
 # and specify the fully qualified class name to the JavaScript interface
 # class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+-keepclassmembers class fqcn.of.javascript.interface.for.webview {
+   public *;
+}
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# ----------------------------------------------------
+# 1. DISABLE OBFUSCATION (Keep original names)
+# ----------------------------------------------------
+-dontobfuscate
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# ----------------------------------------------------
+# 2. STANDARD JNI & OPENCV KEEP RULES
+# ----------------------------------------------------
+
+# Keep all native methods and their declaring classes from being stripped
+-keepclasseswithmembernames class * {
+    native <methods>;
+}
+
+# keep cfc classes
+-keep class org.cimbar.** { *; }
+-keepclassmembers class org.cimbar.** { *; }
+
+# Keep OpenCV Android SDK Java wrappers from being stripped
+-keep class org.opencv.** { *; }
+-keepclassmembers class org.opencv.** { *; }
+-dontwarn org.opencv.**

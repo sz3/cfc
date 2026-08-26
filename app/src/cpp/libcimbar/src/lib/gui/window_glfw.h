@@ -30,6 +30,13 @@ public:
 			return;
 		}
 
+#ifdef CIMBAR_USE_ANGLE
+		glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+		glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+#endif
+
 		_w = glfwCreateWindow(width, height, title.c_str(), NULL, NULL);
 		if (!_w)
 		{

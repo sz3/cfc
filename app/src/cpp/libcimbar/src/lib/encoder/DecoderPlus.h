@@ -24,7 +24,7 @@ inline unsigned DecoderPlus::decode(std::string filename, std::string output)
 	cv::Mat img = cv::imread(filename);
 	cv::cvtColor(img, img, cv::COLOR_BGR2RGB);
 
-	std::ofstream f(output);
+	std::ofstream f(output,	std::ios::binary);
 	return Decoder::decode(img, f, false);
 }
 

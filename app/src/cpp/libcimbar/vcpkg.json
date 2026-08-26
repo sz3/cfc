@@ -1,0 +1,13 @@
+{
+  "name": "libcimbar",
+  "version-string": "0.6.7c",
+  "builtin-baseline": "9e593bb18ea69cc5095e012465dcd675a822ed0d",
+  "dependencies": [
+    {
+      "name": "angle",
+      "platform": "windows & !mingw"
+    },
+    "glfw3",
+    "opencv4"
+  ]
+}
