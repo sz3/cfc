@@ -1,10 +1,13 @@
 apply plugin: 'com.android.application'
 
+boolean ndkDirDefinedByFdroid = localProperties.containsKey("ndk.dir")
 android {
     namespace 'org.cimbar.camerafilecopy'
     compileSdkVersion 34
     buildToolsVersion "35.0.1"
-    ndkVersion "25.1.8937393"
+    if (!ndkDirDefinedByFdroid) {
+        ndkVersion "29.0.14206865"
+    }
     defaultConfig {
         applicationId "org.cimbar.camerafilecopy"
         minSdkVersion 21
