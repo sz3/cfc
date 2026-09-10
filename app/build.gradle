@@ -4,7 +4,7 @@ android {
     namespace 'org.cimbar.camerafilecopy'
     compileSdkVersion 34
     buildToolsVersion "35.0.1"
-    ndkVersion "29.0.14206865"
+    ndkVersion "25.1.8937393"
     defaultConfig {
         applicationId "org.cimbar.camerafilecopy"
         minSdkVersion 21
