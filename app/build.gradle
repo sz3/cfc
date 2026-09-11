@@ -1,6 +1,14 @@
 apply plugin: 'com.android.application'
 
+import java.util.Properties
+
+Properties localProperties = new Properties()
+File localPropsFile = rootProject.file("local.properties")
+if (localPropsFile.exists()) {
+    localProperties.load(new FileInputStream(localPropsFile))
+}
 boolean ndkDirDefinedByFdroid = localProperties.containsKey("ndk.dir")
+
 android {
     namespace 'org.cimbar.camerafilecopy'
     compileSdkVersion 34
