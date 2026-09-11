@@ -49,10 +49,4 @@ dependencies {
     implementation project(path: ':opencv')
 }
 
-preBuild.doFirst {
-    def indexHtml = file("src/main/assets/index.html")
-    if (!indexHtml.exists()) {
-        throw new GradleException("Missing cimbar-js-bits submodule? (index.html)")
-    }
-}
 
