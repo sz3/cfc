@@ -54,5 +54,11 @@ preBuild.doFirst {
     if (!indexHtml.exists()) {
         throw new GradleException("Missing cimbar-js-bits submodule? (index.html)")
     }
+    def digest = java.security.MessageDigest.getInstance("SHA-256")
+    def actual = digest.digest(indexHtml.bytes).collect { String.format("%02x", it) }.join("")
+    def expected = "e406704bbdebf89da22fcb86f9432b15e745181cdd608a273815c2df9606f0d9" // v0.6.8
+    if (actual != expected) {
+        throw new GradleException("cimbar-js-bits SHA-256 mismatch :(\n  expected: ${expected}\n  actual:   ${actual}")
+    }
 }
 
