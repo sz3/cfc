@@ -10,6 +10,7 @@ import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
+import android.provider.DocumentsContract;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
@@ -40,7 +41,9 @@ public class MainActivity extends CameraActivity implements CvCameraViewListener
     private int modeVal = 0;
     private int detectedMode = 68;
     private String dataPath;
-    private String activePath;
+
+    private static final String CACHE_KEY_ACTIVE_PATH = "activePath";
+    private volatile String activePath;
 
     public MainActivity() {
         Log.i(TAG, "Instantiated new " + this.getClass());
@@ -51,6 +54,10 @@ public class MainActivity extends CameraActivity implements CvCameraViewListener
     public void onCreate(Bundle savedInstanceState) {
         Log.i(TAG, "called onCreate");
         super.onCreate(savedInstanceState);
+
+        // recover activePAth if we got one
+        if (savedInstanceState != null)
+            this.activePath = savedInstanceState.getString(CACHE_KEY_ACTIVE_PATH);
 
         //! [ocv_loader_init]
         if (OpenCVLoader.initLocal()) {
@@ -125,6 +132,12 @@ public class MainActivity extends CameraActivity implements CvCameraViewListener
     @Override
     protected List<? extends CameraBridgeViewBase> getCameraViewList() {
         return Collections.singletonList(mOpenCvCameraView);
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle out) {
+        super.onSaveInstanceState(out);
+        out.putString(CACHE_KEY_ACTIVE_PATH, this.activePath);
     }
 
     @Override
@@ -206,9 +219,13 @@ public class MainActivity extends CameraActivity implements CvCameraViewListener
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK && requestCode == CREATE_FILE) {
-            if (this.activePath == null)
+            if (this.activePath == null) {
+                Log.e(TAG, "onActivityResult: no activePath, dropping data");
+                try { DocumentsContract.deleteDocument(getContentResolver(), data.getData()); } catch (Exception e) {}
                 return;
+            }
 
             // copy this.activePath (tempfile) to the user-specified location
             try (
