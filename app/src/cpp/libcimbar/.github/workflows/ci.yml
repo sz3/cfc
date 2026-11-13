@@ -23,12 +23,9 @@ jobs:
           extra-packages: "clang"
 
         - name: "linux clang-latest"
-          os: ubuntu-latest
+          os: ubuntu-24.04
           env: CXX="clang++" CC="clang"
           extra-packages: "clang"
-
-        - name: "windows msvc"
-          os: windows-latest
 
     steps:
     - uses: actions/checkout@v4
