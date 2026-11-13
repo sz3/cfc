@@ -227,9 +227,23 @@ public class MainActivity extends CameraActivity implements CvCameraViewListener
                 return;
             }
 
+            // paranoia, since this has bitten us before
+            File tempfile = new File(this.activePath);
+            if (!tempfile.exists()) {
+                Log.i(TAG, "onActivityResult: activePath file does not exist. Bail.");
+                return;
+            }
+            if (tempfile.length() == 0) {
+                Log.i(TAG, "onActivityResult: activePath file was empty somehow. Bail.");
+                try {
+                    tempfile.delete();
+                } catch (Exception e) {}
+                return;
+            }
+
             // copy this.activePath (tempfile) to the user-specified location
             try (
-                    InputStream istream = new FileInputStream(this.activePath);
+                    FileInputStream istream = new FileInputStream(this.activePath);
                     OutputStream ostream = getContentResolver().openOutputStream(data.getData())
             ) {
                 byte[] buf = new byte[8192];
@@ -242,7 +256,7 @@ public class MainActivity extends CameraActivity implements CvCameraViewListener
                 Log.e(TAG, "failed to write file " + e.toString());
             } finally {
                 try {
-                    new File(this.activePath).delete();
+                    tempfile.delete();
                 } catch (Exception e) {}
                 this.activePath = null;
             }
